@@ -519,6 +519,42 @@ tbody tr:hover { background: #fafbff; }
   </div>
 </div>
 
+<!-- MODAL: TENAGA PENDIDIK (staf kependidikan non-guru) -->
+<div class="modal-backdrop" id="tendikModal">
+  <div class="modal modal-lg">
+    <div class="modal-head">
+      <h3 id="tendikModalTitle">Tambah Tenaga Pendidik</h3>
+      <button class="modal-close" onclick="closeModal('tendikModal')">✕</button>
+    </div>
+    <form id="tendikForm">
+      <div class="modal-body">
+        <input type="hidden" id="tendikId" />
+        <div class="form-grid">
+          <div class="field"><label>NIP</label><input type="text" id="tdNip" required /></div>
+          <div class="field"><label>Nama Lengkap</label><input type="text" id="tdNama" required /></div>
+          <div class="field">
+            <label>Jenis Kelamin</label>
+            <select id="tdJk"><option value="L">Laki-laki</option><option value="P">Perempuan</option></select>
+          </div>
+          <div class="field"><label>Jabatan</label><input type="text" id="tdJabatan" placeholder="Contoh: Staf Administrasi" required /></div>
+          <div class="field"><label>Unit Kerja</label><select id="tdUnit"></select></div>
+          <div class="field"><label>No. Telepon</label><input type="text" id="tdTelepon" /></div>
+          <div class="field"><label>Email</label><input type="email" id="tdEmail" /></div>
+          <div class="field full"><label>Alamat</label><input type="text" id="tdAlamat" /></div>
+          <div class="field">
+            <label>Status</label>
+            <select id="tdStatus"><option value="Aktif">Aktif</option><option value="Cuti">Cuti</option><option value="Nonaktif">Nonaktif</option></select>
+          </div>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button type="button" class="btn btn-outline" onclick="closeModal('tendikModal')">Batal</button>
+        <button type="submit" class="btn btn-blue">💾 Simpan Data</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <!-- MODAL: KELAS -->
 <div class="modal-backdrop" id="kelasModal">
   <div class="modal">
@@ -657,6 +693,14 @@ const DB = (function () {
         { id: "g4", nip: "198812112013012004", nama: "Maria Goreti, S.Si", jk: "P", mapel: "IPA", telepon: "081234500004", email: "maria.goreti@smphulnani.sch.id", alamat: "Kupang", status: "Aktif", waliKelas: "" },
         { id: "g5", nip: "199203302014011005", nama: "Yusuf Kalla, S.Pd", jk: "L", mapel: "IPS", telepon: "081234500005", email: "yusuf.kalla@smphulnani.sch.id", alamat: "Kupang", status: "Aktif", waliKelas: "" },
         { id: "g6", nip: "198609182010012006", nama: "Fitriani, S.Pd", jk: "P", mapel: "PJOK", telepon: "081234500006", email: "fitriani@smphulnani.sch.id", alamat: "Kupang", status: "Cuti", waliKelas: "" },
+      ],
+      tendik: [
+        { id: "t1", nip: "197805102006041001", nama: "Herman Wijaya, S.E", jk: "L", jabatan: "Kepala Tata Usaha", unit: "Tata Usaha", telepon: "081234600001", email: "herman.wijaya@smphulnani.sch.id", alamat: "Kupang", status: "Aktif" },
+        { id: "t2", nip: "198310252009022002", nama: "Ratna Sari, A.Md", jk: "P", jabatan: "Staf Administrasi", unit: "Tata Usaha", telepon: "081234600002", email: "ratna.sari@smphulnani.sch.id", alamat: "Kupang", status: "Aktif" },
+        { id: "t3", nip: "199005142015031003", nama: "Yosef Manu", jk: "L", jabatan: "Pustakawan", unit: "Perpustakaan", telepon: "081234600003", email: "yosef.manu@smphulnani.sch.id", alamat: "Kupang", status: "Aktif" },
+        { id: "t4", nip: "198711302012012004", nama: "Dewi Anggraini, S.Kom", jk: "P", jabatan: "Laboran", unit: "Laboratorium", telepon: "081234600004", email: "dewi.anggraini@smphulnani.sch.id", alamat: "Kupang", status: "Aktif" },
+        { id: "t5", nip: "198202182010011005", nama: "Agus Setiawan", jk: "L", jabatan: "Satpam", unit: "Keamanan", telepon: "081234600005", email: "agus.setiawan@smphulnani.sch.id", alamat: "Kupang", status: "Aktif" },
+        { id: "t6", nip: "199112052018012006", nama: "Maria Fatima", jk: "P", jabatan: "Petugas Kebersihan", unit: "Umum", telepon: "081234600006", email: "maria.fatima@smphulnani.sch.id", alamat: "Kupang", status: "Cuti" },
       ],
       kelas: [
         { id: "k1", nama: "VII-A", tingkat: 7, waliId: "g1", ruang: "R.101" },
@@ -852,6 +896,7 @@ const NAV_ITEMS = [
   { key: "dashboard", icon: "📊", label: "Dashboard", roles: ["admin", "guru", "siswa"] },
   { key: "siswa", icon: "🧑‍🎓", label: "Data Siswa", roles: ["admin", "guru"] },
   { key: "guru", icon: "🧑‍🏫", label: "Data Guru", roles: ["admin"] },
+  { key: "tendik", icon: "🧰", label: "Tenaga Pendidik", roles: ["admin"] },
   { key: "kelas", icon: "🏫", label: "Data Kelas", roles: ["admin"] },
   { key: "nilai", icon: "📝", label: "Nilai Akademik", roles: ["admin", "guru", "siswa"] },
   { key: "absensi", icon: "🗓️", label: "Absensi", roles: ["admin", "guru", "siswa"] },
@@ -863,7 +908,8 @@ const ROLE_LABEL = { admin: "Administrator", guru: "Guru", siswa: "Siswa" };
 const PAGE_META = {
   dashboard: { title: "Dashboard", sub: "Ringkasan data sekolah hari ini" },
   siswa: { title: "Data Siswa", sub: "Kelola data induk siswa SMP Hulnani" },
-  guru: { title: "Data Guru", sub: "Kelola data guru dan tenaga pendidik" },
+  guru: { title: "Data Guru", sub: "Kelola data guru pengajar" },
+  tendik: { title: "Tenaga Pendidik", sub: "Kelola data tenaga kependidikan (staf non-guru)" },
   kelas: { title: "Data Kelas", sub: "Kelola rombongan belajar (rombel) sekolah" },
   nilai: { title: "Nilai Akademik", sub: "Kelola nilai akademik siswa per mata pelajaran" },
   absensi: { title: "Absensi", sub: "Catat dan kelola kehadiran siswa harian" },
@@ -914,6 +960,7 @@ const ROUTES = {
   dashboard: renderDashboard,
   siswa: renderSiswa,
   guru: renderGuru,
+  tendik: renderTendik,
   kelas: renderKelas,
   nilai: renderNilai,
   absensi: renderAbsensi,
@@ -1320,6 +1367,115 @@ window.deleteGuru = function(id) {
     message: `Data guru "${g ? g.nama : ""}" akan dihapus permanen.`,
     confirmText: "Ya, Hapus",
     onConfirm: () => { DB.remove("guru", id); showToast("Data guru berhasil dihapus.", "success"); renderGuru(); },
+  });
+};
+
+/* ---- TENAGA PENDIDIK (staf kependidikan non-guru) ---- */
+const TENDIK_UNIT_OPTIONS = ["Tata Usaha", "Perpustakaan", "Laboratorium", "Keamanan", "Umum", "Bimbingan Konseling"];
+
+function renderTendik() {
+  const content = document.getElementById("pageContent");
+  if (!window.tendikState) window.tendikState = { searchTerm: "", currentPage: 1, pageSize: 8 };
+  const state = window.tendikState;
+
+  function statusBadge(status) {
+    const map = { Aktif: "badge-green", Cuti: "badge-orange", Nonaktif: "badge-red" };
+    return `<span class="badge ${map[status]||"badge-gray"}">${status}</span>`;
+  }
+
+  function renderToolbar() {
+    return `
+      <div class="toolbar">
+        <div class="toolbar-left"><div class="search-box"><span class="ic">🔍</span><input type="text" id="searchInput" placeholder="Cari nama atau NIP..." value="${escapeHtml(state.searchTerm)}" /></div></div>
+        <button class="btn btn-blue" id="btnAddTendik">➕ Tambah Tenaga Pendidik</button>
+      </div>`;
+  }
+
+  function renderTable() {
+    let data = DB.get("tendik");
+    if (state.searchTerm) {
+      const q = state.searchTerm.toLowerCase();
+      data = data.filter(t => t.nama.toLowerCase().includes(q) || t.nip.includes(q));
+    }
+    const total = data.length;
+    const totalPages = Math.max(1, Math.ceil(total / state.pageSize));
+    if (state.currentPage > totalPages) state.currentPage = totalPages;
+    const pageData = data.slice((state.currentPage-1)*state.pageSize, state.currentPage*state.pageSize);
+
+    const rows = pageData.map(t => `
+      <tr>
+        <td><div class="table-avatar"><div class="avatar">${initials(t.nama)}</div><div><div class="tname">${escapeHtml(t.nama)}</div><div class="tsub">NIP: ${escapeHtml(t.nip)}</div></div></div></td>
+        <td>${escapeHtml(t.jabatan)}</td>
+        <td>${escapeHtml(t.unit)}</td>
+        <td>${escapeHtml(t.telepon || "-")}</td>
+        <td>${statusBadge(t.status)}</td>
+        <td><div class="row-actions"><button class="action-btn" title="Edit" onclick="editTendik('${t.id}')">✏️</button><button class="action-btn danger" title="Hapus" onclick="deleteTendik('${t.id}')">🗑️</button></div></td>
+      </tr>`).join("");
+
+    const tableHtml = total === 0
+      ? `<div class="empty-state"><div class="ic">🧰</div>Tidak ada data tenaga pendidik yang ditemukan.</div>`
+      : `<table><thead><tr><th>Nama</th><th>Jabatan</th><th>Unit Kerja</th><th>Telepon</th><th>Status</th><th>Aksi</th></tr></thead><tbody>${rows}</tbody></table>`;
+
+    const paginationHtml = `
+      <div class="pagination">
+        <span>Menampilkan ${total === 0 ? 0 : (state.currentPage-1)*state.pageSize+1}-${Math.min(state.currentPage*state.pageSize,total)} dari ${total} data</span>
+        <div class="pg-btns">
+          <button ${state.currentPage===1?"disabled":""} onclick="tendikGoPage(${state.currentPage-1})">‹</button>
+          ${Array.from({length: totalPages}, (_,i)=>i+1).map(p => `<button class="${p===state.currentPage?"active":""}" onclick="tendikGoPage(${p})">${p}</button>`).join("")}
+          <button ${state.currentPage===totalPages?"disabled":""} onclick="tendikGoPage(${state.currentPage+1})">›</button>
+        </div>
+      </div>`;
+
+    return `<div class="table-wrap">${tableHtml}${total>0?paginationHtml:""}</div>`;
+  }
+
+  content.innerHTML = renderToolbar() + renderTable();
+  document.getElementById("searchInput").addEventListener("input", debounce((e) => {
+    state.searchTerm = e.target.value;
+    state.currentPage = 1;
+    renderTendik();
+    const input = document.getElementById("searchInput");
+    input.focus();
+    input.setSelectionRange(input.value.length, input.value.length);
+  }, 300));
+  document.getElementById("btnAddTendik").addEventListener("click", () => openTendikForm());
+}
+
+window.tendikGoPage = function(p) { window.tendikState.currentPage = p; renderTendik(); };
+
+function populateUnitSelect(selected) {
+  const sel = document.getElementById("tdUnit");
+  sel.innerHTML = TENDIK_UNIT_OPTIONS.map(u => `<option value="${escapeHtml(u)}" ${u===selected?"selected":""}>${escapeHtml(u)}</option>`).join("");
+}
+
+window.openTendikForm = function(tendik) {
+  document.getElementById("tendikForm").reset();
+  populateUnitSelect(tendik ? tendik.unit : "");
+  if (tendik) {
+    document.getElementById("tendikModalTitle").textContent = "Edit Data Tenaga Pendidik";
+    document.getElementById("tendikId").value = tendik.id;
+    document.getElementById("tdNip").value = tendik.nip;
+    document.getElementById("tdNama").value = tendik.nama;
+    document.getElementById("tdJk").value = tendik.jk;
+    document.getElementById("tdJabatan").value = tendik.jabatan;
+    document.getElementById("tdTelepon").value = tendik.telepon || "";
+    document.getElementById("tdEmail").value = tendik.email || "";
+    document.getElementById("tdAlamat").value = tendik.alamat || "";
+    document.getElementById("tdStatus").value = tendik.status || "Aktif";
+  } else {
+    document.getElementById("tendikModalTitle").textContent = "Tambah Tenaga Pendidik";
+    document.getElementById("tendikId").value = "";
+  }
+  openModal("tendikModal");
+};
+window.editTendik = function(id) { const t = DB.findById("tendik", id); if (t) openTendikForm(t); };
+window.deleteTendik = function(id) {
+  const t = DB.findById("tendik", id);
+  confirmDialog({
+    title: "Hapus Data Tenaga Pendidik?",
+    message: `Data "${t ? t.nama : ""}" akan dihapus permanen.`,
+    confirmText: "Ya, Hapus",
+    onConfirm: () => { DB.remove("tendik", id); showToast("Data tenaga pendidik berhasil dihapus.", "success"); renderTendik(); },
   });
 };
 
@@ -1863,6 +2019,26 @@ document.getElementById("guruForm").addEventListener("submit", (e) => {
   else { DB.insert("guru", payload); showToast("Data guru berhasil ditambahkan.", "success"); }
   closeModal("guruModal");
   renderGuru();
+});
+
+document.getElementById("tendikForm").addEventListener("submit", (e) => {
+  e.preventDefault();
+  const id = document.getElementById("tendikId").value;
+  const payload = {
+    nip: document.getElementById("tdNip").value.trim(),
+    nama: document.getElementById("tdNama").value.trim(),
+    jk: document.getElementById("tdJk").value,
+    jabatan: document.getElementById("tdJabatan").value.trim(),
+    unit: document.getElementById("tdUnit").value,
+    telepon: document.getElementById("tdTelepon").value.trim(),
+    email: document.getElementById("tdEmail").value.trim(),
+    alamat: document.getElementById("tdAlamat").value.trim(),
+    status: document.getElementById("tdStatus").value,
+  };
+  if (id) { DB.update("tendik", id, payload); showToast("Data tenaga pendidik berhasil diperbarui.", "success"); }
+  else { DB.insert("tendik", payload); showToast("Data tenaga pendidik berhasil ditambahkan.", "success"); }
+  closeModal("tendikModal");
+  renderTendik();
 });
 
 document.getElementById("kelasForm").addEventListener("submit", (e) => {

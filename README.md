@@ -20,6 +20,7 @@ Cukup buka file `sistem-digital-smp-hulnani.html` langsung dengan browser (doubl
 - **Dashboard** ringkasan data sesuai peran pengguna.
 - **Data Siswa** — CRUD lengkap, pencarian, filter kelas, dan detail siswa.
 - **Data Guru** — CRUD lengkap (khusus Admin).
+- **Tenaga Pendidik** — CRUD data tenaga kependidikan non-guru (TU, Pustakawan, Laboran, Satpam, Petugas Kebersihan, dll) (khusus Admin).
 - **Data Kelas** — kelola rombongan belajar & wali kelas (khusus Admin).
 - **Nilai Akademik** — input nilai (Admin/Guru), lihat nilai (Siswa), otomatis badge lulus/tidak KKM.
 - **Absensi** — input kehadiran harian per kelas (Admin/Guru), riwayat kehadiran (Siswa).
