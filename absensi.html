@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Absensi — Sistem Digital SMP Hulnani</title>
+<link rel="stylesheet" href="assets/css/style.css" />
+</head>
+<body>
+<div class="app-shell" id="appShell"></div>
+
+<script src="assets/js/db.js"></script>
+<script src="assets/js/auth.js"></script>
+<script src="assets/js/app.js"></script>
+<script>
+const session = Auth.requireLogin();
+if (session) {
+  const canEdit = session.role === "admin" || session.role === "guru";
+  renderShell("absensi", "Absensi", canEdit ? "Catat dan kelola kehadiran siswa harian" : "Riwayat kehadiran Anda");
+  const content = document.getElementById("pageContent");
+
+  const todayStr = new Date().toISOString().slice(0,10);
+  let selectedDate = todayStr;
+  let selectedKelas = DB.get("kelas")[0] ? DB.get("kelas")[0].nama : "";
+
+  const STATUS_OPTIONS = ["Hadir", "Sakit", "Izin", "Alpa"];
+  const STATUS_BADGE = { Hadir: "badge-green", Sakit: "badge-orange", Izin: "badge-blue", Alpa: "badge-red" };
+
+  function renderAdminGuruView() {
+    const kelasList = DB.get("kelas");
+    const siswaKelas = DB.get("siswa").filter(s => s.kelas === selectedKelas && s.status === "Aktif");
+    const absensiData = DB.get("absensi");
+
+    const rows = siswaKelas.map(s => {
+      const record = absensiData.find(a => a.siswaId === s.id && a.tanggal === selectedDate);
+      const currentStatus = record ? record.status : "Hadir";
+      return `
+        <tr>
+          <td>
+            <div class="table-avatar">
+              <div class="avatar">${initials(s.nama)}</div>
+              <div>
+                <div class="tname">${escapeHtml(s.nama)}</div>
+                <div class="tsub">NIS: ${escapeHtml(s.nis)}</div>
+              </div>
+            </div>
+          </td>
+          <td>
+            <div class="row-actions" data-siswa="${s.id}">
+              ${STATUS_OPTIONS.map(st => `
+                <button type="button" class="btn btn-sm ${st===currentStatus ? 'btn-blue' : 'btn-outline'}" data-status="${st}" onclick="setAbsen('${s.id}','${st}')">${st}</button>
+              `).join("")}
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join("");
+
+    const summary = STATUS_OPTIONS.map(st => {
+      const count = siswaKelas.filter(s => {
+        const rec = absensiData.find(a => a.siswaId === s.id && a.tanggal === selectedDate);
+        return (rec ? rec.status : "Hadir") === st;
+      }).length;
+      return { st, count };
+    });
+
+    return `
+      <div class="toolbar">
+        <div class="toolbar-left">
+          <select class="select-filter" id="filterKelas">
+            ${kelasList.map(k => `<option value="${escapeHtml(k.nama)}" ${selectedKelas===k.nama?"selected":""}>${escapeHtml(k.nama)}</option>`).join("")}
+          </select>
+          <input type="date" id="filterTanggal" class="select-filter" value="${selectedDate}" />
+        </div>
+      </div>
+      <div class="stat-grid" style="margin-bottom:16px;">
+        ${summary.map(({st,count}) => `
+          <div class="stat-card">
+            <div class="stat-info">
+              <div class="label">${st}</div>
+              <div class="value">${count}</div>
+            </div>
+            <div class="stat-icon ${st==='Hadir'?'icon-green':st==='Sakit'?'icon-orange':st==='Izin'?'icon-blue':'icon-red'}">
+              ${st==='Hadir'?'✅':st==='Sakit'?'🤒':st==='Izin'?'✉️':'❌'}
+            </div>
+          </div>
+        `).join("")}
+      </div>
+      <div class="table-wrap">
+        ${siswaKelas.length === 0
+          ? `<div class="empty-state"><div class="ic">🗓️</div>Tidak ada siswa aktif di kelas ini.</div>`
+          : `<table><thead><tr><th>Nama Siswa</th><th>Status Kehadiran</th></tr></thead><tbody>${rows}</tbody></table>`}
+      </div>
+    `;
+  }
+
+  function renderSiswaView() {
+    const myAbsen = DB.get("absensi").filter(a => a.siswaId === session.linkedId).sort((a,b)=>b.tanggal.localeCompare(a.tanggal));
+    const total = myAbsen.length;
+    const summary = STATUS_OPTIONS.map(st => ({ st, count: myAbsen.filter(a=>a.status===st).length }));
+
+    const rows = myAbsen.map(a => `
+      <tr>
+        <td>${formatDate(a.tanggal)}</td>
+        <td><span class="badge ${STATUS_BADGE[a.status]}">${a.status}</span></td>
+      </tr>
+    `).join("");
+
+    return `
+      <div class="stat-grid" style="margin-bottom:16px;">
+        ${summary.map(({st,count}) => `
+          <div class="stat-card">
+            <div class="stat-info">
+              <div class="label">${st}</div>
+              <div class="value">${count}</div>
+              <div class="delta">${total ? Math.round((count/total)*100) : 0}% dari total</div>
+            </div>
+            <div class="stat-icon ${st==='Hadir'?'icon-green':st==='Sakit'?'icon-orange':st==='Izin'?'icon-blue':'icon-red'}">
+              ${st==='Hadir'?'✅':st==='Sakit'?'🤒':st==='Izin'?'✉️':'❌'}
+            </div>
+          </div>
+        `).join("")}
+      </div>
+      <div class="table-wrap">
+        ${total === 0
+          ? `<div class="empty-state"><div class="ic">🗓️</div>Belum ada riwayat absensi.</div>`
+          : `<table><thead><tr><th>Tanggal</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table>`}
+      </div>
+    `;
+  }
+
+  function fullRender() {
+    if (canEdit) {
+      content.innerHTML = renderAdminGuruView();
+      document.getElementById("filterKelas").addEventListener("change", (e) => { selectedKelas = e.target.value; fullRender(); });
+      document.getElementById("filterTanggal").addEventListener("change", (e) => { selectedDate = e.target.value; fullRender(); });
+    } else {
+      content.innerHTML = renderSiswaView();
+    }
+  }
+
+  window.setAbsen = function(siswaId, status) {
+    const absensiData = DB.get("absensi");
+    const existing = absensiData.find(a => a.siswaId === siswaId && a.tanggal === selectedDate);
+    if (existing) {
+      DB.update("absensi", existing.id, { status });
+    } else {
+      DB.insert("absensi", { siswaId, tanggal: selectedDate, status });
+    }
+    showToast(`Kehadiran diperbarui: ${status}`, "success");
+    fullRender();
+  };
+
+  fullRender();
+}
+</script>
+</body>
+</html>

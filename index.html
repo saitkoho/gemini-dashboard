@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Login — Sistem Digital SMP Hulnani</title>
+<link rel="stylesheet" href="assets/css/style.css" />
+</head>
+<body class="login-page">
+
+  <div class="login-card">
+    <div class="login-brand">
+      <div>
+        <div class="brand-logo">
+          <div class="logo-badge">🎓</div>
+          <span>SMP HULNANI</span>
+        </div>
+        <h1>Sistem Digital<br/>Administrasi Sekolah</h1>
+        <p>Kelola data siswa, guru, nilai, absensi, dan pengumuman sekolah dalam satu platform terpadu.</p>
+      </div>
+      <div class="brand-footer">
+        &copy; <span id="year"></span> SMP Hulnani. Seluruh hak cipta dilindungi.
+      </div>
+    </div>
+
+    <div class="login-form-wrap">
+      <h2>Selamat Datang 👋</h2>
+      <p class="sub">Masuk untuk mengakses dashboard sekolah Anda.</p>
+
+      <div class="role-tabs" id="roleTabs">
+        <button type="button" class="active" data-role="admin">Admin</button>
+        <button type="button" data-role="guru">Guru</button>
+        <button type="button" data-role="siswa">Siswa</button>
+      </div>
+
+      <div class="login-error" id="loginError"></div>
+
+      <form id="loginForm">
+        <div class="field">
+          <label for="username">Username</label>
+          <div class="input-wrap">
+            <input type="text" id="username" placeholder="Masukkan username" autocomplete="username" required />
+          </div>
+        </div>
+        <div class="field">
+          <label for="password">Kata Sandi</label>
+          <div class="input-wrap">
+            <input type="password" id="password" placeholder="Masukkan kata sandi" autocomplete="current-password" required />
+            <button type="button" class="toggle-pass" id="togglePass">Lihat</button>
+          </div>
+        </div>
+        <button type="submit" class="btn-primary">Masuk ke Dashboard</button>
+      </form>
+
+      <div class="login-hint">
+        <b>Demo akun:</b><br/>
+        Admin &nbsp;→ admin / admin123<br/>
+        Guru &nbsp;&nbsp;→ guru / guru123<br/>
+        Siswa &nbsp;→ siswa / siswa123
+      </div>
+    </div>
+  </div>
+
+<script src="assets/js/db.js"></script>
+<script src="assets/js/auth.js"></script>
+<script>
+  document.getElementById("year").textContent = new Date().getFullYear();
+
+  // ensure DB seeded
+  DB.load();
+
+  // if already logged in, go straight to dashboard
+  if (Auth.current()) {
+    window.location.href = "dashboard.html";
+  }
+
+  const roleTabs = document.getElementById("roleTabs");
+  const usernameInput = document.getElementById("username");
+  const passwordInput = document.getElementById("password");
+  const demoCreds = {
+    admin: { u: "admin", p: "admin123" },
+    guru: { u: "guru", p: "guru123" },
+    siswa: { u: "siswa", p: "siswa123" },
+  };
+
+  roleTabs.addEventListener("click", (e) => {
+    const btn = e.target.closest("button[data-role]");
+    if (!btn) return;
+    roleTabs.querySelectorAll("button").forEach((b) => b.classList.remove("active"));
+    btn.classList.add("active");
+  });
+
+  document.getElementById("togglePass").addEventListener("click", (e) => {
+    const isPass = passwordInput.type === "password";
+    passwordInput.type = isPass ? "text" : "password";
+    e.target.textContent = isPass ? "Sembunyi" : "Lihat";
+  });
+
+  const errorBox = document.getElementById("loginError");
+
+  document.getElementById("loginForm").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const username = usernameInput.value.trim();
+    const password = passwordInput.value;
+    const result = Auth.login(username, password);
+    if (!result.ok) {
+      errorBox.textContent = result.message;
+      errorBox.style.display = "block";
+      return;
+    }
+    errorBox.style.display = "none";
+    window.location.href = "dashboard.html";
+  });
+</script>
+</body>
+</html>

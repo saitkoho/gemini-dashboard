@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Data Kelas — Sistem Digital SMP Hulnani</title>
+<link rel="stylesheet" href="assets/css/style.css" />
+</head>
+<body>
+<div class="app-shell" id="appShell"></div>
+
+<div class="modal-backdrop" id="kelasModal">
+  <div class="modal">
+    <div class="modal-head">
+      <h3 id="kelasModalTitle">Tambah Kelas</h3>
+      <button class="modal-close" onclick="closeModal('kelasModal')">✕</button>
+    </div>
+    <form id="kelasForm">
+      <div class="modal-body">
+        <input type="hidden" id="kelasId" />
+        <div class="field">
+          <label>Nama Kelas</label>
+          <input type="text" id="fNama" placeholder="Contoh: VII-C" required />
+        </div>
+        <div class="field">
+          <label>Tingkat</label>
+          <select id="fTingkat" required>
+            <option value="7">Kelas 7</option>
+            <option value="8">Kelas 8</option>
+            <option value="9">Kelas 9</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Wali Kelas</label>
+          <select id="fWali"><option value="">- Belum ditentukan -</option></select>
+        </div>
+        <div class="field">
+          <label>Ruang Kelas</label>
+          <input type="text" id="fRuang" placeholder="Contoh: R.101" />
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button type="button" class="btn btn-outline" onclick="closeModal('kelasModal')">Batal</button>
+        <button type="submit" class="btn btn-blue">💾 Simpan Data</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script src="assets/js/db.js"></script>
+<script src="assets/js/auth.js"></script>
+<script src="assets/js/app.js"></script>
+<script>
+const session = Auth.requireRole(["admin"]);
+if (session) {
+  renderShell("kelas", "Data Kelas", "Kelola rombongan belajar (rombel) sekolah");
+  const content = document.getElementById("pageContent");
+
+  function populateWaliSelect(selected) {
+    const guru = DB.get("guru");
+    const sel = document.getElementById("fWali");
+    sel.innerHTML = `<option value="">- Belum ditentukan -</option>` +
+      guru.map(g => `<option value="${g.id}" ${g.id===selected?"selected":""}>${escapeHtml(g.nama)}</option>`).join("");
+  }
+
+  function renderCards() {
+    const kelasList = DB.get("kelas");
+    const siswaList = DB.get("siswa");
+    const guruList = DB.get("guru");
+
+    if (kelasList.length === 0) {
+      return `<div class="empty-state"><div class="ic">🏫</div>Belum ada data kelas.</div>`;
+    }
+
+    return `<div class="stat-grid" style="grid-template-columns:repeat(3,1fr);">` +
+      kelasList.map(k => {
+        const wali = guruList.find(g => g.id === k.waliId);
+        const jumlahSiswa = siswaList.filter(s => s.kelas === k.nama && s.status === "Aktif").length;
+        return `
+        <div class="card">
+          <div class="flex-between" style="margin-bottom:14px;">
+            <div class="stat-icon icon-blue" style="width:44px;height:44px;">🏫</div>
+            <div class="row-actions">
+              <button class="action-btn" title="Edit" onclick="editKelas('${k.id}')">✏️</button>
+              <button class="action-btn danger" title="Hapus" onclick="deleteKelas('${k.id}')">🗑️</button>
+            </div>
+          </div>
+          <h3 style="margin:0 0 4px; font-size:18px;">${escapeHtml(k.nama)}</h3>
+          <p class="text-muted" style="margin:0 0 14px; font-size:12.5px;">Kelas ${k.tingkat} • Ruang ${escapeHtml(k.ruang || "-")}</p>
+          <div style="border-top:1px dashed var(--border); padding-top:12px; font-size:13px;">
+            <div class="flex-between" style="margin-bottom:6px;"><span class="text-muted">Wali Kelas</span><b>${wali ? escapeHtml(wali.nama) : "-"}</b></div>
+            <div class="flex-between"><span class="text-muted">Jumlah Siswa</span><b>${jumlahSiswa} siswa</b></div>
+          </div>
+        </div>`;
+      }).join("") + `</div>`;
+  }
+
+  function fullRender() {
+    content.innerHTML = `
+      <div class="toolbar">
+        <div></div>
+        <button class="btn btn-blue" id="btnAddKelas">➕ Tambah Kelas</button>
+      </div>
+      ${renderCards()}
+    `;
+    document.getElementById("btnAddKelas").addEventListener("click", () => openKelasForm());
+  }
+
+  window.openKelasForm = function(kelas) {
+    document.getElementById("kelasForm").reset();
+    populateWaliSelect(kelas ? kelas.waliId : "");
+    if (kelas) {
+      document.getElementById("kelasModalTitle").textContent = "Edit Data Kelas";
+      document.getElementById("kelasId").value = kelas.id;
+      document.getElementById("fNama").value = kelas.nama;
+      document.getElementById("fTingkat").value = kelas.tingkat;
+      document.getElementById("fRuang").value = kelas.ruang || "";
+    } else {
+      document.getElementById("kelasModalTitle").textContent = "Tambah Kelas";
+      document.getElementById("kelasId").value = "";
+    }
+    openModal("kelasModal");
+  };
+
+  window.editKelas = function(id) {
+    const k = DB.findById("kelas", id);
+    if (k) openKelasForm(k);
+  };
+
+  window.deleteKelas = function(id) {
+    const k = DB.findById("kelas", id);
+    const jumlahSiswa = DB.get("siswa").filter(s => s.kelas === (k ? k.nama : "")).length;
+    confirmDialog({
+      title: "Hapus Data Kelas?",
+      message: jumlahSiswa > 0
+        ? `Kelas "${k.nama}" masih memiliki ${jumlahSiswa} siswa terdaftar. Tetap hapus kelas ini?`
+        : `Kelas "${k ? k.nama : ""}" akan dihapus permanen.`,
+      confirmText: "Ya, Hapus",
+      onConfirm: () => {
+        DB.remove("kelas", id);
+        showToast("Data kelas berhasil dihapus.", "success");
+        fullRender();
+      },
+    });
+  };
+
+  document.getElementById("kelasForm").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const id = document.getElementById("kelasId").value;
+    const waliId = document.getElementById("fWali").value;
+    const guru = waliId ? DB.findById("guru", waliId) : null;
+    const payload = {
+      nama: document.getElementById("fNama").value.trim(),
+      tingkat: Number(document.getElementById("fTingkat").value),
+      waliId: waliId,
+      ruang: document.getElementById("fRuang").value.trim(),
+    };
+    if (id) {
+      DB.update("kelas", id, payload);
+      showToast("Data kelas berhasil diperbarui.", "success");
+    } else {
+      DB.insert("kelas", payload);
+      showToast("Data kelas berhasil ditambahkan.", "success");
+    }
+    // sync waliKelas field on guru records for consistency
+    const allGuru = DB.get("guru");
+    allGuru.forEach(g => {
+      if (g.waliKelas === payload.nama && g.id !== waliId) {
+        DB.update("guru", g.id, { waliKelas: "" });
+      }
+    });
+    if (guru) DB.update("guru", guru.id, { waliKelas: payload.nama });
+
+    closeModal("kelasModal");
+    fullRender();
+  });
+
+  fullRender();
+}
+</script>
+</body>
+</html>

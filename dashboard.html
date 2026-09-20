@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Dashboard — Sistem Digital SMP Hulnani</title>
+<link rel="stylesheet" href="assets/css/style.css" />
+</head>
+<body>
+<div class="app-shell" id="appShell"></div>
+
+<script src="assets/js/db.js"></script>
+<script src="assets/js/auth.js"></script>
+<script src="assets/js/app.js"></script>
+<script>
+const session = renderShell("dashboard", "Dashboard", "Ringkasan data sekolah hari ini");
+if (session) {
+  const content = document.getElementById("pageContent");
+
+  const siswa = DB.get("siswa");
+  const guru = DB.get("guru");
+  const kelas = DB.get("kelas");
+  const absensi = DB.get("absensi");
+  const nilai = DB.get("nilai");
+  const pengumuman = DB.get("pengumuman");
+  const settings = DB.get("settings");
+
+  const today = new Date().toISOString().slice(0, 10);
+  const siswaAktif = siswa.filter(s => s.status === "Aktif");
+  const absenHariIni = absensi.filter(a => a.tanggal === today);
+  const hadirHariIni = absenHariIni.filter(a => a.status === "Hadir").length;
+  const persenHadir = absenHariIni.length ? Math.round((hadirHariIni / absenHariIni.length) * 100) : 0;
+
+  const rataRataNilai = nilai.length
+    ? Math.round(nilai.reduce((sum, n) => sum + Number(n.nilai), 0) / nilai.length)
+    : 0;
+
+  // ---- Stat cards (role aware) ----
+  let statCardsHtml = "";
+  if (session.role === "admin") {
+    statCardsHtml = `
+      <div class="stat-card">
+        <div class="stat-info">
+          <div class="label">Total Siswa</div>
+          <div class="value">${siswaAktif.length}</div>
+          <div class="delta">${siswa.length} total terdaftar</div>
+        </div>
+        <div class="stat-icon icon-blue">🧑‍🎓</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-info">
+          <div class="label">Total Guru</div>
+          <div class="value">${guru.length}</div>
+          <div class="delta">${guru.filter(g=>g.status==='Aktif').length} aktif mengajar</div>
+        </div>
+        <div class="stat-icon icon-purple">🧑‍🏫</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-info">
+          <div class="label">Jumlah Kelas</div>
+          <div class="value">${kelas.length}</div>
+          <div class="delta">Tahun ajaran ${settings.tahunAjaran}</div>
+        </div>
+        <div class="stat-icon icon-orange">🏫</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-info">
+          <div class="label">Kehadiran Hari Ini</div>
+          <div class="value">${persenHadir}%</div>
+          <div class="delta">${hadirHariIni} dari ${absenHariIni.length || 0} tercatat</div>
+        </div>
+        <div class="stat-icon icon-green">🗓️</div>
+      </div>`;
+  } else if (session.role === "guru") {
+    const myClass = guru.find(g => g.id === session.linkedId);
+    const waliKelasNama = myClass ? myClass.waliKelas : "-";
+    const siswaWali = siswa.filter(s => s.kelas === waliKelasNama).length;
+    statCardsHtml = `
+      <div class="stat-card">
+        <div class="stat-info">
+          <div class="label">Kelas Wali</div>
+          <div class="value">${waliKelasNama || "-"}</div>
+          <div class="delta">${siswaWali} siswa</div>
+        </div>
+        <div class="stat-icon icon-blue">🏫</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-info">
+          <div class="label">Mapel Diampu</div>
+          <div class="value" style="font-size:18px;">${myClass ? myClass.mapel : "-"}</div>
+        </div>
+        <div class="stat-icon icon-purple">📘</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-info">
+          <div class="label">Rata-rata Nilai</div>
+          <div class="value">${rataRataNilai}</div>
+          <div class="delta">Semester ${settings.semester}</div>
+        </div>
+        <div class="stat-icon icon-orange">📝</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-info">
+          <div class="label">Kehadiran Hari Ini</div>
+          <div class="value">${persenHadir}%</div>
+        </div>
+        <div class="stat-icon icon-green">🗓️</div>
+      </div>`;
+  } else {
+    const me = DB.findById("siswa", session.linkedId) || {};
+    const myNilai = nilai.filter(n => n.siswaId === session.linkedId);
+    const myAvg = myNilai.length ? Math.round(myNilai.reduce((s,n)=>s+Number(n.nilai),0)/myNilai.length) : 0;
+    const myAbsen = absensi.filter(a => a.siswaId === session.linkedId);
+    const myHadir = myAbsen.filter(a => a.status === "Hadir").length;
+    statCardsHtml = `
+      <div class="stat-card">
+        <div class="stat-info">
+          <div class="label">Kelas</div>
+          <div class="value" style="font-size:20px;">${me.kelas || "-"}</div>
+        </div>
+        <div class="stat-icon icon-blue">🏫</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-info">
+          <div class="label">Rata-rata Nilai</div>
+          <div class="value">${myAvg}</div>
+        </div>
+        <div class="stat-icon icon-purple">📝</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-info">
+          <div class="label">Kehadiran</div>
+          <div class="value">${myAbsen.length ? Math.round((myHadir/myAbsen.length)*100) : 0}%</div>
+          <div class="delta">${myHadir} hadir dari ${myAbsen.length} tercatat</div>
+        </div>
+        <div class="stat-icon icon-green">🗓️</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-info">
+          <div class="label">Status</div>
+          <div class="value" style="font-size:18px;">${me.status || "-"}</div>
+        </div>
+        <div class="stat-icon icon-orange">✅</div>
+      </div>`;
+  }
+
+  // ---- Activity feed (recent absences) ----
+  const recentAbsen = [...absensi].sort((a,b) => b.tanggal.localeCompare(a.tanggal)).slice(0, 6);
+  const activityHtml = recentAbsen.map(a => {
+    const s = DB.findById("siswa", a.siswaId);
+    const iconMap = { Hadir: ["✅","icon-green"], Sakit: ["🤒","icon-orange"], Izin: ["✉️","icon-blue"], Alpa: ["❌","icon-red"] };
+    const [ic, cls] = iconMap[a.status] || ["ℹ️","icon-blue"];
+    return `
+      <div class="activity-item">
+        <div class="activity-dot ${cls}">${ic}</div>
+        <div>
+          <div class="activity-text"><b>${escapeHtml(s ? s.nama : "Siswa")}</b> tercatat <b>${a.status}</b> di kelas ${escapeHtml(s ? s.kelas : "-")}</div>
+          <div class="activity-time">${formatDateTimeRelative(a.tanggal)}</div>
+        </div>
+      </div>`;
+  }).join("") || `<div class="empty-state"><div class="ic">🗒️</div>Belum ada data aktivitas.</div>`;
+
+  // ---- Announcements mini ----
+  const annHtml = [...pengumuman].sort((a,b)=>b.tanggal.localeCompare(a.tanggal)).slice(0,3).map(p => `
+    <div class="mini-announce">
+      <h4>${escapeHtml(p.judul)}</h4>
+      <p>${formatDate(p.tanggal)} • ${escapeHtml(p.kategori)}</p>
+    </div>`).join("") || `<div class="empty-state"><div class="ic">📣</div>Belum ada pengumuman.</div>`;
+
+  content.innerHTML = `
+    <div class="stat-grid">${statCardsHtml}</div>
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-head">
+          <div>
+            <h3>Aktivitas Absensi Terbaru</h3>
+            <p>Riwayat kehadiran siswa terbaru</p>
+          </div>
+          <a href="absensi.html" class="link-more">Lihat semua →</a>
+        </div>
+        ${activityHtml}
+      </div>
+      <div class="card">
+        <div class="card-head">
+          <div>
+            <h3>Pengumuman</h3>
+            <p>Info terbaru dari sekolah</p>
+          </div>
+          <a href="pengumuman.html" class="link-more">Lihat semua →</a>
+        </div>
+        ${annHtml}
+      </div>
+    </div>
+  `;
+}
+</script>
+</body>
+</html>
