@@ -371,6 +371,8 @@ tbody tr:hover { background: #fafbff; }
       <div class="role-tabs" id="roleTabs">
         <button type="button" class="active" data-role="admin">Admin</button>
         <button type="button" data-role="guru">Guru</button>
+        <button type="button" data-role="tendik">Tendik</button>
+        <button type="button" data-role="kepsek">Kepsek</button>
         <button type="button" data-role="siswa">Siswa</button>
       </div>
       <div class="login-error" id="loginError"></div>
@@ -390,9 +392,11 @@ tbody tr:hover { background: #fafbff; }
       </form>
       <div class="login-hint">
         <b>Demo akun:</b><br/>
-        Admin &nbsp;→ admin / admin123<br/>
-        Guru &nbsp;&nbsp;→ guru / guru123<br/>
-        Siswa &nbsp;→ siswa / siswa123
+        Admin &nbsp;&nbsp;→ admin / admin123<br/>
+        Guru &nbsp;&nbsp;&nbsp;→ guru / guru123<br/>
+        Tendik &nbsp;→ tendik / tendik123<br/>
+        Kepsek &nbsp;→ kepsek / kepsek123<br/>
+        Siswa &nbsp;&nbsp;→ siswa / siswa123
       </div>
     </div>
   </div>
@@ -747,6 +751,11 @@ const DB = (function () {
         { id: "u1", username: "admin", password: "admin123", role: "admin", name: "Administrator", linkedId: null },
         { id: "u2", username: "guru", password: "guru123", role: "guru", name: "Budi Santoso, S.Pd", linkedId: "g1" },
         { id: "u3", username: "siswa", password: "siswa123", role: "siswa", name: "Nisa Amalia", linkedId: "s1" },
+        { id: "u4", username: "tendik", password: "tendik123", role: "tendik", name: "Herman Wijaya, S.E", linkedId: "t1" },
+        { id: "u5", username: "kepsek", password: "kepsek123", role: "kepsek", name: "Drs. Yohanes Bria, M.Pd", linkedId: "ks1" },
+      ],
+      kepsek: [
+        { id: "ks1", nip: "196904151994121001", nama: "Drs. Yohanes Bria, M.Pd", jk: "L", telepon: "081234400001", email: "kepsek@smphulnani.sch.id", alamat: "Kupang", status: "Aktif" },
       ],
       mapel: [
         { id: "m1", nama: "Matematika", kkm: 75 },
@@ -827,6 +836,40 @@ const DB = (function () {
         { id: "nm2", guruId: "g1", siswaId: "s2", mapelId: "m1", jenis: "Tugas", nilai: 82, semester: "Ganjil", tahunAjaran: "2026/2027" },
         { id: "nm3", guruId: "g1", siswaId: "s3", mapelId: "m1", jenis: "UH1", nilai: 78, semester: "Ganjil", tahunAjaran: "2026/2027" },
       ],
+      waliCatatan: [
+        { id: "wc1", guruId: "g1", siswaId: "s2", tanggal: todayOffset(-3), kategori: "Akademik", isi: "Perlu pendampingan tambahan pada latihan pecahan.", tindakLanjut: "Koordinasi dengan orang tua dan jadwal bimbingan." },
+        { id: "wc2", guruId: "g2", siswaId: "s5", tanggal: todayOffset(-2), kategori: "Prestasi", isi: "Aktif dalam kegiatan literasi kelas.", tindakLanjut: "Diberi kesempatan menjadi koordinator pojok baca." },
+      ],
+      buku: [
+        { id: "b1", kode: "BK-001", judul: "Matematika untuk SMP Kelas VII", penulis: "Tim Edukasi Nusantara", kategori: "Pelajaran", tahun: "2025", lokasi: "Rak A-01", stok: 12, kondisi: "Baik" },
+        { id: "b2", kode: "BK-002", judul: "Laskar Pelangi", penulis: "Andrea Hirata", kategori: "Fiksi", tahun: "2023", lokasi: "Rak B-04", stok: 5, kondisi: "Baik" },
+        { id: "b3", kode: "BK-003", judul: "Ensiklopedia Sains Remaja", penulis: "Pustaka Cendekia", kategori: "Referensi", tahun: "2024", lokasi: "Rak C-02", stok: 3, kondisi: "Baik" },
+      ],
+      peminjamanBuku: [
+        { id: "pb1", bukuId: "b2", anggotaTipe: "siswa", anggotaId: "s1", tanggalPinjam: todayOffset(-4), jatuhTempo: todayOffset(3), tanggalKembali: "", status: "Dipinjam", petugasId: "g1" },
+        { id: "pb2", bukuId: "b1", anggotaTipe: "guru", anggotaId: "g2", tanggalPinjam: todayOffset(-10), jatuhTempo: todayOffset(-3), tanggalKembali: todayOffset(-2), status: "Dikembalikan", petugasId: "g1" },
+      ],
+      suratMasuk: [
+        { id: "sm1", nomorAgenda: "SM-001/IX/2026", nomorSurat: "421/102/DISDIK/2026", tanggal: todayOffset(-5), pengirim: "Dinas Pendidikan Kota Kupang", perihal: "Undangan Rapat Koordinasi Pendidikan", status: "Sudah Didisposisikan", petugasId: "t1" },
+        { id: "sm2", nomorAgenda: "SM-002/IX/2026", nomorSurat: "015/KOMITE/IX/2026", tanggal: todayOffset(-2), pengirim: "Komite SMP Hulnani", perihal: "Usulan Program Literasi", status: "Baru", petugasId: "t1" },
+      ],
+      suratKeluar: [
+        { id: "sk1", nomorSurat: "421/034/SMP-HLN/IX/2026", tanggal: todayOffset(-1), tujuan: "Orang Tua/Wali Siswa Kelas VII", perihal: "Pemberitahuan Kegiatan Tengah Semester", status: "Terkirim", petugasId: "t1" },
+      ],
+      disposisiSurat: [
+        { id: "ds1", suratMasukId: "sm1", kepada: "Kepala Sekolah", instruksi: "Hadiri rapat dan siapkan laporan data pendidikan.", batasWaktu: todayOffset(1), status: "Diproses", petugasId: "t1" },
+      ],
+      inventaris: [
+        { id: "iv1", kode: "INV-001", nama: "Laptop Administrasi", kategori: "Elektronik", lokasi: "Ruang Tata Usaha", jumlah: 3, kondisi: "Baik", tahunPerolehan: "2025" },
+        { id: "iv2", kode: "INV-002", nama: "Proyektor LCD", kategori: "Elektronik", lokasi: "Ruang Kelas VII-A", jumlah: 1, kondisi: "Perlu Perawatan", tahunPerolehan: "2022" },
+        { id: "iv3", kode: "INV-003", nama: "Meja Siswa", kategori: "Mebel", lokasi: "Ruang Kelas VII-B", jumlah: 32, kondisi: "Baik", tahunPerolehan: "2024" },
+      ],
+      peminjamanAset: [
+        { id: "pa1", inventarisId: "iv2", peminjam: "Budi Santoso, S.Pd", tanggalPinjam: todayOffset(0), tanggalKembali: todayOffset(0), keperluan: "Pembelajaran Matematika", status: "Dipinjam", petugasId: "t1" },
+      ],
+      pemeliharaanAset: [
+        { id: "ma1", inventarisId: "iv2", tanggal: todayOffset(-1), tindakan: "Pemeriksaan lampu proyektor", biaya: 0, status: "Terjadwal", petugasId: "t1" },
+      ],
       pengumuman: [
         { id: "p1", judul: "Libur Semester Ganjil", kategori: "Umum", isi: "Diberitahukan kepada seluruh siswa/i bahwa libur semester ganjil akan dimulai tanggal 20 Desember 2026. Kegiatan belajar mengajar akan kembali aktif pada 5 Januari 2027.", tanggal: todayOffset(-2), penulis: "Administrator" },
         { id: "p2", judul: "Jadwal Ujian Tengah Semester", kategori: "Akademik", isi: "Ujian Tengah Semester (UTS) Ganjil akan dilaksanakan pada tanggal 6-10 Oktober 2026. Siswa diharapkan mempersiapkan diri dengan baik.", tanggal: todayOffset(-5), penulis: "Administrator" },
@@ -849,6 +892,13 @@ const DB = (function () {
       let changed = false;
       Object.keys(defaults).forEach((key) => {
         if (data[key] === undefined) { data[key] = defaults[key]; changed = true; }
+      });
+      // Tambahkan akun demo baru tanpa mengganti akun maupun kata sandi yang sudah ada.
+      ["tendik", "kepsek"].forEach((username) => {
+        if (data.users && !data.users.some((user) => user.username === username)) {
+          const demoUser = defaults.users.find((user) => user.username === username);
+          if (demoUser) { data.users.push(demoUser); changed = true; }
+        }
       });
       if (changed) localStorage.setItem(DB_KEY, JSON.stringify(data));
       return data;
@@ -986,7 +1036,7 @@ function confirmDialog({ title, message, confirmText = "Ya", cancelText = "Batal
    4) NAVIGATION & ROUTER
    --------------------------------------------------------- */
 const NAV_ITEMS = [
-  { key: "dashboard", icon: "📊", label: "Dashboard", roles: ["admin", "guru", "siswa"] },
+  { key: "dashboard", icon: "📊", label: "Dashboard", roles: ["admin", "guru", "tendik", "kepsek", "siswa"] },
   { key: "siswa", icon: "🧑‍🎓", label: "Data Siswa", roles: ["admin", "guru"], adminGroup: true },
   { key: "guru", icon: "🧑‍🏫", label: "Data Guru", roles: ["admin"], adminGroup: true },
   { key: "tendik", icon: "🧰", label: "Tenaga Pendidik", roles: ["admin"], adminGroup: true },
@@ -1003,43 +1053,43 @@ const NAV_ITEMS = [
   { key: "wali-absensi", icon: "📅", label: "Absensi & Rekap", roles: ["admin", "guru"], waliKelasGroup: true },
   { key: "wali-catatan", icon: "📒", label: "Catatan Wali Kelas", roles: ["admin", "guru"], waliKelasGroup: true },
 
-  { key: "perpus-koleksi", icon: "📚", label: "Koleksi Buku", roles: ["admin"], perpustakaanGroup: true },
-  { key: "perpus-sirkulasi", icon: "🔄", label: "Peminjaman & Pengembalian", roles: ["admin"], perpustakaanGroup: true },
-  { key: "perpus-anggota", icon: "👥", label: "Anggota Perpustakaan", roles: ["admin"], perpustakaanGroup: true },
-  { key: "perpus-laporan", icon: "📈", label: "Laporan Perpustakaan", roles: ["admin"], perpustakaanGroup: true },
+  { key: "perpus-koleksi", icon: "📚", label: "Koleksi Buku", roles: ["admin", "guru"], perpustakaanGroup: true },
+  { key: "perpus-sirkulasi", icon: "🔄", label: "Peminjaman & Pengembalian", roles: ["admin", "guru"], perpustakaanGroup: true },
+  { key: "perpus-anggota", icon: "👥", label: "Anggota Perpustakaan", roles: ["admin", "guru"], perpustakaanGroup: true },
+  { key: "perpus-laporan", icon: "📈", label: "Laporan Perpustakaan", roles: ["admin", "guru"], perpustakaanGroup: true },
 
-  { key: "tu-surat-masuk", icon: "📥", label: "Surat Masuk", roles: ["admin"], tuGroup: true },
-  { key: "tu-surat-keluar", icon: "📤", label: "Surat Keluar", roles: ["admin"], tuGroup: true },
-  { key: "tu-disposisi", icon: "🗂️", label: "Disposisi & Arsip Digital", roles: ["admin"], tuGroup: true },
-  { key: "tu-laporan", icon: "📊", label: "Laporan Persuratan", roles: ["admin"], tuGroup: true },
+  { key: "tu-surat-masuk", icon: "📥", label: "Surat Masuk", roles: ["admin", "tendik"], tuGroup: true },
+  { key: "tu-surat-keluar", icon: "📤", label: "Surat Keluar", roles: ["admin", "tendik"], tuGroup: true },
+  { key: "tu-disposisi", icon: "🗂️", label: "Disposisi & Arsip Digital", roles: ["admin", "tendik"], tuGroup: true },
+  { key: "tu-laporan", icon: "📊", label: "Laporan Persuratan", roles: ["admin", "tendik"], tuGroup: true },
 
-  { key: "sarpras-inventaris", icon: "📦", label: "Inventaris Barang", roles: ["admin"], sarprasGroup: true },
-  { key: "sarpras-peminjaman", icon: "🔑", label: "Peminjaman Aset", roles: ["admin"], sarprasGroup: true },
-  { key: "sarpras-pemeliharaan", icon: "🛠️", label: "Kondisi & Pemeliharaan", roles: ["admin"], sarprasGroup: true },
-  { key: "sarpras-laporan", icon: "📋", label: "Laporan Sarpras", roles: ["admin"], sarprasGroup: true },
+  { key: "sarpras-inventaris", icon: "📦", label: "Inventaris Barang", roles: ["admin", "tendik"], sarprasGroup: true },
+  { key: "sarpras-peminjaman", icon: "🔑", label: "Peminjaman Aset", roles: ["admin", "tendik"], sarprasGroup: true },
+  { key: "sarpras-pemeliharaan", icon: "🛠️", label: "Kondisi & Pemeliharaan", roles: ["admin", "tendik"], sarprasGroup: true },
+  { key: "sarpras-laporan", icon: "📋", label: "Laporan Sarpras", roles: ["admin", "tendik"], sarprasGroup: true },
 
-  { key: "kepsek-dashboard", icon: "📡", label: "Dashboard Monitoring", roles: ["admin"], kepsekGroup: true },
-  { key: "kepsek-akademik", icon: "🎓", label: "Monitoring Akademik", roles: ["admin"], kepsekGroup: true },
-  { key: "kepsek-kehadiran", icon: "✅", label: "Monitoring Kehadiran", roles: ["admin"], kepsekGroup: true },
-  { key: "kepsek-sarpras", icon: "🏢", label: "Monitoring Sarpras", roles: ["admin"], kepsekGroup: true },
-  { key: "kepsek-laporan", icon: "🗒️", label: "Laporan Sekolah", roles: ["admin"], kepsekGroup: true },
+  { key: "kepsek-dashboard", icon: "📡", label: "Dashboard Monitoring", roles: ["admin", "kepsek"], kepsekGroup: true },
+  { key: "kepsek-akademik", icon: "🎓", label: "Monitoring Akademik", roles: ["admin", "kepsek"], kepsekGroup: true },
+  { key: "kepsek-kehadiran", icon: "✅", label: "Monitoring Kehadiran", roles: ["admin", "kepsek"], kepsekGroup: true },
+  { key: "kepsek-sarpras", icon: "🏢", label: "Monitoring Sarpras", roles: ["admin", "kepsek"], kepsekGroup: true },
+  { key: "kepsek-laporan", icon: "🗒️", label: "Laporan Sekolah", roles: ["admin", "kepsek"], kepsekGroup: true },
 
   { key: "pengumuman", icon: "📣", label: "Pengumuman", roles: ["admin", "guru", "siswa"], adminGroup: true },
-  { key: "profil", icon: "👤", label: "Profil Saya", roles: ["guru", "siswa"] },
+  { key: "profil", icon: "👤", label: "Profil Saya", roles: ["guru", "tendik", "kepsek", "siswa"] },
   { key: "pengaturan", icon: "⚙️", label: "Pengaturan", roles: ["admin"], adminGroup: true },
 ];
 
 const SIDEBAR_GROUPS = [
   { id: "guruMapelGroup", flag: "guruMapelGroup", label: "Guru Mata Pelajaran", icon: "🧑‍🏫", roles: ["admin", "guru"] },
   { id: "waliKelasGroup", flag: "waliKelasGroup", label: "Wali Kelas", icon: "👩‍🏫", roles: ["admin", "guru"] },
-  { id: "perpustakaanGroup", flag: "perpustakaanGroup", label: "Perpustakaan", icon: "📖", roles: ["admin"] },
-  { id: "tuGroup", flag: "tuGroup", label: "TU & Persuratan Digital", icon: "✉️", roles: ["admin"] },
-  { id: "sarprasGroup", flag: "sarprasGroup", label: "Sarana & Prasarana", icon: "🏗️", roles: ["admin"] },
-  { id: "kepsekGroup", flag: "kepsekGroup", label: "Kepala Sekolah", icon: "👔", roles: ["admin"] },
+  { id: "perpustakaanGroup", flag: "perpustakaanGroup", label: "Perpustakaan", icon: "📖", roles: ["admin", "guru"] },
+  { id: "tuGroup", flag: "tuGroup", label: "TU & Persuratan Digital", icon: "✉️", roles: ["admin", "tendik"] },
+  { id: "sarprasGroup", flag: "sarprasGroup", label: "Sarana & Prasarana", icon: "🏗️", roles: ["admin", "tendik"] },
+  { id: "kepsekGroup", flag: "kepsekGroup", label: "Kepala Sekolah", icon: "👔", roles: ["admin", "kepsek"] },
   { id: "adminGroup", flag: "adminGroup", label: "Administrator", icon: "🛠️", roles: ["admin"] },
 ];
 
-const ROLE_LABEL = { admin: "Administrator", guru: "Guru", siswa: "Siswa" };
+const ROLE_LABEL = { admin: "Administrator", guru: "Guru", tendik: "Tenaga Pendidik", kepsek: "Kepala Sekolah", siswa: "Siswa" };
 const PAGE_META = {
   dashboard: { title: "Dashboard", sub: "Ringkasan data sekolah hari ini" },
   siswa: { title: "Data Siswa", sub: "Kelola data induk siswa SMP Hulnani" },
@@ -1052,31 +1102,31 @@ const PAGE_META = {
   "absensi-siswa": { title: "Absensi Siswa", sub: "Catat kehadiran siswa per mata pelajaran" },
   "input-nilai": { title: "Input Nilai", sub: "Input dan kelola nilai siswa pada mata pelajaran yang diampu" },
 
-  "wali-ringkasan": { title: "Ringkasan Kelas", sub: "Struktur dashboard untuk pemantauan wali kelas" },
-  "wali-siswa": { title: "Siswa Binaan", sub: "Struktur data siswa yang berada di bawah pembinaan wali kelas" },
-  "wali-absensi": { title: "Absensi & Rekap", sub: "Struktur rekap kehadiran dan tindak lanjut siswa per kelas" },
-  "wali-catatan": { title: "Catatan Wali Kelas", sub: "Struktur catatan perkembangan dan komunikasi wali kelas" },
+  "wali-ringkasan": { title: "Ringkasan Kelas", sub: "Pantau kondisi dan kehadiran kelas binaan" },
+  "wali-siswa": { title: "Siswa Binaan", sub: "Data siswa yang berada di bawah pembinaan wali kelas" },
+  "wali-absensi": { title: "Absensi & Rekap", sub: "Rekap kehadiran dan tindak lanjut siswa per kelas" },
+  "wali-catatan": { title: "Catatan Wali Kelas", sub: "Catatan perkembangan dan komunikasi wali kelas" },
 
-  "perpus-koleksi": { title: "Koleksi Buku", sub: "Struktur katalog dan inventaris koleksi perpustakaan" },
-  "perpus-sirkulasi": { title: "Peminjaman & Pengembalian", sub: "Struktur transaksi sirkulasi buku perpustakaan" },
-  "perpus-anggota": { title: "Anggota Perpustakaan", sub: "Struktur data anggota dan status keanggotaan perpustakaan" },
-  "perpus-laporan": { title: "Laporan Perpustakaan", sub: "Struktur laporan koleksi dan aktivitas sirkulasi" },
+  "perpus-koleksi": { title: "Koleksi Buku", sub: "Kelola katalog dan inventaris koleksi perpustakaan" },
+  "perpus-sirkulasi": { title: "Peminjaman & Pengembalian", sub: "Kelola transaksi sirkulasi buku perpustakaan" },
+  "perpus-anggota": { title: "Anggota Perpustakaan", sub: "Data anggota dan status keanggotaan perpustakaan" },
+  "perpus-laporan": { title: "Laporan Perpustakaan", sub: "Rekap koleksi dan aktivitas sirkulasi perpustakaan" },
 
-  "tu-surat-masuk": { title: "Surat Masuk", sub: "Struktur registrasi dan tindak lanjut surat masuk" },
-  "tu-surat-keluar": { title: "Surat Keluar", sub: "Struktur pembuatan, penomoran, dan pengiriman surat keluar" },
-  "tu-disposisi": { title: "Disposisi & Arsip Digital", sub: "Struktur alur disposisi serta penyimpanan arsip digital" },
-  "tu-laporan": { title: "Laporan Persuratan", sub: "Struktur rekap surat masuk, keluar, dan disposisi" },
+  "tu-surat-masuk": { title: "Surat Masuk", sub: "Registrasi dan tindak lanjut surat masuk" },
+  "tu-surat-keluar": { title: "Surat Keluar", sub: "Pembuatan, penomoran, dan pengiriman surat keluar" },
+  "tu-disposisi": { title: "Disposisi & Arsip Digital", sub: "Alur disposisi serta penyimpanan arsip digital" },
+  "tu-laporan": { title: "Laporan Persuratan", sub: "Rekap surat masuk, keluar, dan disposisi" },
 
-  "sarpras-inventaris": { title: "Inventaris Barang", sub: "Struktur pendataan aset dan inventaris sekolah" },
-  "sarpras-peminjaman": { title: "Peminjaman Aset", sub: "Struktur pencatatan peminjaman barang dan ruang" },
-  "sarpras-pemeliharaan": { title: "Kondisi & Pemeliharaan", sub: "Struktur pemantauan kondisi dan perawatan aset" },
-  "sarpras-laporan": { title: "Laporan Sarpras", sub: "Struktur rekap inventaris, kondisi, dan pemeliharaan" },
+  "sarpras-inventaris": { title: "Inventaris Barang", sub: "Pendataan aset dan inventaris sekolah" },
+  "sarpras-peminjaman": { title: "Peminjaman Aset", sub: "Pencatatan peminjaman barang dan ruang" },
+  "sarpras-pemeliharaan": { title: "Kondisi & Pemeliharaan", sub: "Pemantauan kondisi dan perawatan aset" },
+  "sarpras-laporan": { title: "Laporan Sarpras", sub: "Rekap inventaris, kondisi, dan pemeliharaan" },
 
   "kepsek-dashboard": { title: "Dashboard Monitoring", sub: "Ringkasan indikator sekolah untuk Kepala Sekolah" },
-  "kepsek-akademik": { title: "Monitoring Akademik", sub: "Struktur pemantauan nilai dan aktivitas pembelajaran" },
-  "kepsek-kehadiran": { title: "Monitoring Kehadiran", sub: "Struktur pemantauan kehadiran siswa dan guru" },
-  "kepsek-sarpras": { title: "Monitoring Sarpras", sub: "Struktur pemantauan aset dan kebutuhan sarana prasarana" },
-  "kepsek-laporan": { title: "Laporan Sekolah", sub: "Struktur laporan ringkas untuk pengambilan keputusan" },
+  "kepsek-akademik": { title: "Monitoring Akademik", sub: "Pemantauan nilai dan aktivitas pembelajaran" },
+  "kepsek-kehadiran": { title: "Monitoring Kehadiran", sub: "Pemantauan kehadiran siswa dan guru" },
+  "kepsek-sarpras": { title: "Monitoring Sarpras", sub: "Pemantauan aset dan kebutuhan sarana prasarana" },
+  "kepsek-laporan": { title: "Laporan Sekolah", sub: "Laporan ringkas untuk pengambilan keputusan" },
 
   pengumuman: { title: "Pengumuman", sub: "Info dan pengumuman terbaru dari sekolah" },
   profil: { title: "Profil Saya", sub: "Informasi akun dan data pribadi Anda" },
@@ -1181,27 +1231,27 @@ const ROUTES = {
   "jurnal-mengajar": renderJurnalMengajar,
   "absensi-siswa": renderAbsensiSiswaMapel,
   "input-nilai": renderInputNilaiMapel,
-  "wali-ringkasan": () => renderStructureModule("wali-ringkasan"),
-  "wali-siswa": () => renderStructureModule("wali-siswa"),
-  "wali-absensi": () => renderStructureModule("wali-absensi"),
-  "wali-catatan": () => renderStructureModule("wali-catatan"),
-  "perpus-koleksi": () => renderStructureModule("perpus-koleksi"),
-  "perpus-sirkulasi": () => renderStructureModule("perpus-sirkulasi"),
-  "perpus-anggota": () => renderStructureModule("perpus-anggota"),
-  "perpus-laporan": () => renderStructureModule("perpus-laporan"),
-  "tu-surat-masuk": () => renderStructureModule("tu-surat-masuk"),
-  "tu-surat-keluar": () => renderStructureModule("tu-surat-keluar"),
-  "tu-disposisi": () => renderStructureModule("tu-disposisi"),
-  "tu-laporan": () => renderStructureModule("tu-laporan"),
-  "sarpras-inventaris": () => renderStructureModule("sarpras-inventaris"),
-  "sarpras-peminjaman": () => renderStructureModule("sarpras-peminjaman"),
-  "sarpras-pemeliharaan": () => renderStructureModule("sarpras-pemeliharaan"),
-  "sarpras-laporan": () => renderStructureModule("sarpras-laporan"),
-  "kepsek-dashboard": () => renderStructureModule("kepsek-dashboard"),
-  "kepsek-akademik": () => renderStructureModule("kepsek-akademik"),
-  "kepsek-kehadiran": () => renderStructureModule("kepsek-kehadiran"),
-  "kepsek-sarpras": () => renderStructureModule("kepsek-sarpras"),
-  "kepsek-laporan": () => renderStructureModule("kepsek-laporan"),
+  "wali-ringkasan": renderWaliRingkasan,
+  "wali-siswa": renderWaliSiswa,
+  "wali-absensi": renderWaliAbsensi,
+  "wali-catatan": renderWaliCatatan,
+  "perpus-koleksi": renderPerpusKoleksi,
+  "perpus-sirkulasi": renderPerpusSirkulasi,
+  "perpus-anggota": renderPerpusAnggota,
+  "perpus-laporan": renderPerpusLaporan,
+  "tu-surat-masuk": renderSuratMasuk,
+  "tu-surat-keluar": renderSuratKeluar,
+  "tu-disposisi": renderDisposisiSurat,
+  "tu-laporan": renderLaporanPersuratan,
+  "sarpras-inventaris": renderInventaris,
+  "sarpras-peminjaman": renderPeminjamanAset,
+  "sarpras-pemeliharaan": renderPemeliharaanAset,
+  "sarpras-laporan": renderLaporanSarpras,
+  "kepsek-dashboard": renderKepsekDashboard,
+  "kepsek-akademik": renderKepsekAkademik,
+  "kepsek-kehadiran": renderKepsekKehadiran,
+  "kepsek-sarpras": renderKepsekSarpras,
+  "kepsek-laporan": renderKepsekLaporan,
   pengumuman: renderPengumuman,
   profil: renderProfil,
   pengaturan: renderPengaturan,
@@ -1308,6 +1358,21 @@ function renderDashboard() {
         <div class="stat-info"><div class="label">Kehadiran Hari Ini</div><div class="value">${persenHadir}%</div></div>
         <div class="stat-icon icon-green">🗓️</div>
       </div>`;
+  } else if (session.role === "tendik") {
+    const me = DB.findById("tendik", session.linkedId) || {};
+    const suratAktif = DB.get("suratMasuk").filter((s) => s.status !== "Selesai").length;
+    const asetPerluRawat = DB.get("inventaris").filter((i) => i.kondisi !== "Baik").length;
+    statCardsHtml = `
+      <div class="stat-card"><div class="stat-info"><div class="label">Unit Kerja</div><div class="value" style="font-size:18px;">${escapeHtml(me.unit || "-")}</div><div class="delta">${escapeHtml(me.jabatan || "Tenaga Pendidik")}</div></div><div class="stat-icon icon-blue">🧰</div></div>
+      <div class="stat-card"><div class="stat-info"><div class="label">Surat Perlu Tindak Lanjut</div><div class="value">${suratAktif}</div></div><div class="stat-icon icon-purple">✉️</div></div>
+      <div class="stat-card"><div class="stat-info"><div class="label">Aset Perlu Perawatan</div><div class="value">${asetPerluRawat}</div></div><div class="stat-icon icon-orange">🛠️</div></div>
+      <div class="stat-card"><div class="stat-info"><div class="label">Inventaris Tercatat</div><div class="value">${DB.get("inventaris").length}</div></div><div class="stat-icon icon-green">📦</div></div>`;
+  } else if (session.role === "kepsek") {
+    statCardsHtml = `
+      <div class="stat-card"><div class="stat-info"><div class="label">Siswa Aktif</div><div class="value">${siswaAktif.length}</div></div><div class="stat-icon icon-blue">🧑‍🎓</div></div>
+      <div class="stat-card"><div class="stat-info"><div class="label">Guru Aktif</div><div class="value">${guru.filter((g) => g.status === "Aktif").length}</div></div><div class="stat-icon icon-purple">🧑‍🏫</div></div>
+      <div class="stat-card"><div class="stat-info"><div class="label">Kehadiran Hari Ini</div><div class="value">${persenHadir}%</div><div class="delta">${hadirHariIni} hadir tercatat</div></div><div class="stat-icon icon-green">✅</div></div>
+      <div class="stat-card"><div class="stat-info"><div class="label">Rata-rata Nilai</div><div class="value">${rataRataNilai}</div><div class="delta">Semester ${settings.semester}</div></div><div class="stat-icon icon-orange">🎓</div></div>`;
   } else {
     const me = DB.findById("siswa", session.linkedId) || {};
     const myNilai = nilai.filter(n => n.siswaId === session.linkedId);
@@ -1331,212 +1396,354 @@ function renderDashboard() {
 
   const annHtml = [...pengumuman].sort((a,b)=>b.tanggal.localeCompare(a.tanggal)).slice(0,3).map(p => `
     <div class="mini-announce"><h4>${escapeHtml(p.judul)}</h4><p>${formatDate(p.tanggal)} • ${escapeHtml(p.kategori)}</p></div>`).join("") || `<div class="empty-state"><div class="ic">📣</div>Belum ada pengumuman.</div>`;
+  const activityRoute = ["admin", "guru", "siswa"].includes(session.role) ? "absensi" : session.role === "tendik" ? "tu-surat-masuk" : "kepsek-kehadiran";
+  const infoRoute = ["admin", "guru", "siswa"].includes(session.role) ? "pengumuman" : session.role === "tendik" ? "tu-surat-masuk" : "kepsek-dashboard";
 
   content.innerHTML = `
     <div class="stat-grid">${statCardsHtml}</div>
     <div class="grid-2">
       <div class="card">
-        <div class="card-head"><div><h3>Aktivitas Absensi Terbaru</h3><p>Riwayat kehadiran siswa terbaru</p></div><a href="#absensi" class="link-more">Lihat semua →</a></div>
+        <div class="card-head"><div><h3>Aktivitas Absensi Terbaru</h3><p>Riwayat kehadiran siswa terbaru</p></div><a href="#${activityRoute}" class="link-more">Lihat semua →</a></div>
         ${activityHtml}
       </div>
       <div class="card">
-        <div class="card-head"><div><h3>Pengumuman</h3><p>Info terbaru dari sekolah</p></div><a href="#pengumuman" class="link-more">Lihat semua →</a></div>
+        <div class="card-head"><div><h3>Pengumuman</h3><p>Info terbaru dari sekolah</p></div><a href="#${infoRoute}" class="link-more">Lihat semua →</a></div>
         ${annHtml}
       </div>
     </div>
   `;
 }
 
-/* ---- STRUKTUR MODUL SEKOLAH (TAHAP RANCANGAN) ---- */
-const STRUCTURE_MODULES = {
-  "wali-ringkasan": {
-    icon: "🏫", group: "Wali Kelas", title: "Ringkasan Kelas",
-    purpose: "Dashboard awal untuk melihat kondisi kelas yang menjadi tanggung jawab wali kelas.",
-    scope: ["Identitas kelas dan wali kelas", "Jumlah siswa aktif", "Ringkasan kehadiran", "Pengumuman dan agenda kelas"],
-    data: ["Kelas dan wali kelas", "Siswa aktif per kelas", "Absensi harian", "Agenda kelas"],
-    links: [{ key: "siswa", label: "Data Siswa" }, { key: "absensi", label: "Absensi" }],
-  },
-  "wali-siswa": {
-    icon: "🧑‍🎓", group: "Wali Kelas", title: "Siswa Binaan",
-    purpose: "Ruang kerja untuk memantau profil, status, dan kebutuhan siswa dalam satu kelas.",
-    scope: ["Daftar siswa per kelas", "Profil dan kontak orang tua", "Status aktif/pindah/lulus", "Riwayat pendampingan"],
-    data: ["Data induk siswa", "Kelas penempatan", "Kontak orang tua", "Riwayat pembinaan"],
-    links: [{ key: "siswa", label: "Buka Data Siswa" }],
-  },
-  "wali-absensi": {
-    icon: "📅", group: "Wali Kelas", title: "Absensi & Rekap",
-    purpose: "Struktur pencatatan dan rekap kehadiran siswa untuk tindak lanjut wali kelas.",
-    scope: ["Absensi harian per kelas", "Rekap hadir, sakit, izin, dan alpa", "Filter tanggal/bulan", "Tindak lanjut ketidakhadiran"],
-    data: ["Siswa aktif", "Tanggal absensi", "Status kehadiran", "Catatan tindak lanjut"],
-    links: [{ key: "absensi", label: "Buka Absensi" }],
-  },
-  "wali-catatan": {
-    icon: "📒", group: "Wali Kelas", title: "Catatan Wali Kelas",
-    purpose: "Struktur catatan perkembangan, komunikasi, dan tindak lanjut bagi setiap siswa.",
-    scope: ["Catatan per siswa", "Kategori akademik, sikap, atau kedisiplinan", "Tanggal dan tindak lanjut", "Riwayat komunikasi orang tua"],
-    data: ["Siswa", "Kategori catatan", "Isi catatan", "Tanggal dan status tindak lanjut"],
-    links: [{ key: "wali-siswa", label: "Siswa Binaan" }],
-  },
-
-  "perpus-koleksi": {
-    icon: "📚", group: "Perpustakaan", title: "Koleksi Buku",
-    purpose: "Struktur katalog buku dan inventaris koleksi perpustakaan sekolah.",
-    scope: ["Kode/ISBN buku", "Judul, penulis, penerbit, tahun", "Kategori dan lokasi rak", "Stok dan kondisi buku"],
-    data: ["Identitas buku", "Kategori", "Lokasi rak", "Jumlah eksemplar dan kondisi"],
-    links: [{ key: "perpus-sirkulasi", label: "Peminjaman & Pengembalian" }],
-  },
-  "perpus-sirkulasi": {
-    icon: "🔄", group: "Perpustakaan", title: "Peminjaman & Pengembalian",
-    purpose: "Struktur transaksi peminjaman, pengembalian, keterlambatan, dan denda buku.",
-    scope: ["Peminjam dan buku", "Tanggal pinjam dan jatuh tempo", "Tanggal kembali", "Status denda/keterlambatan"],
-    data: ["Anggota", "Buku", "Tanggal transaksi", "Status pengembalian dan denda"],
-    links: [{ key: "perpus-koleksi", label: "Koleksi Buku" }, { key: "perpus-anggota", label: "Anggota Perpustakaan" }],
-  },
-  "perpus-anggota": {
-    icon: "👥", group: "Perpustakaan", title: "Anggota Perpustakaan",
-    purpose: "Struktur anggota perpustakaan yang terhubung dengan siswa, guru, dan tenaga kependidikan.",
-    scope: ["Nomor anggota", "Identitas anggota", "Jenis anggota", "Status keanggotaan dan riwayat pinjam"],
-    data: ["Siswa, guru, dan tendik", "Nomor anggota", "Tanggal aktif", "Status anggota"],
-    links: [{ key: "siswa", label: "Data Siswa" }, { key: "guru", label: "Data Guru" }],
-  },
-  "perpus-laporan": {
-    icon: "📈", group: "Perpustakaan", title: "Laporan Perpustakaan",
-    purpose: "Struktur laporan ringkas koleksi, peminjaman, keterlambatan, dan anggota aktif.",
-    scope: ["Rekap koleksi", "Buku terpinjam", "Keterlambatan dan denda", "Statistik anggota"],
-    data: ["Koleksi buku", "Transaksi sirkulasi", "Anggota"],
-    links: [{ key: "perpus-koleksi", label: "Koleksi Buku" }, { key: "perpus-sirkulasi", label: "Transaksi Sirkulasi" }],
-  },
-
-  "tu-surat-masuk": {
-    icon: "📥", group: "TU & Persuratan Digital", title: "Surat Masuk",
-    purpose: "Struktur registrasi surat masuk agar dokumen mudah ditelusuri dan ditindaklanjuti.",
-    scope: ["Nomor agenda", "Nomor dan tanggal surat", "Pengirim dan perihal", "Berkas digital serta status disposisi"],
-    data: ["Metadata surat", "Pengirim", "File arsip", "Tujuan disposisi dan status"],
-    links: [{ key: "tu-disposisi", label: "Disposisi & Arsip Digital" }],
-  },
-  "tu-surat-keluar": {
-    icon: "📤", group: "TU & Persuratan Digital", title: "Surat Keluar",
-    purpose: "Struktur pembuatan dan registrasi surat keluar dengan nomor surat yang tertib.",
-    scope: ["Nomor surat", "Tujuan dan perihal", "Tanggal surat", "Konsep, lampiran, dan status kirim"],
-    data: ["Nomor surat", "Tujuan", "Isi/ringkasan", "Lampiran dan berkas digital"],
-    links: [{ key: "tu-laporan", label: "Laporan Persuratan" }],
-  },
-  "tu-disposisi": {
-    icon: "🗂️", group: "TU & Persuratan Digital", title: "Disposisi & Arsip Digital",
-    purpose: "Struktur alur disposisi surat dan penyimpanan arsip digital yang mudah dicari.",
-    scope: ["Tujuan disposisi", "Instruksi dan batas waktu", "Status tindak lanjut", "Arsip file surat"],
-    data: ["Surat terkait", "Penerima disposisi", "Instruksi", "Status dan file arsip"],
-    links: [{ key: "tu-surat-masuk", label: "Surat Masuk" }, { key: "tu-surat-keluar", label: "Surat Keluar" }],
-  },
-  "tu-laporan": {
-    icon: "📊", group: "TU & Persuratan Digital", title: "Laporan Persuratan",
-    purpose: "Struktur rekap surat masuk, surat keluar, dan tindak lanjut disposisi.",
-    scope: ["Filter periode", "Jumlah surat masuk/keluar", "Status disposisi", "Ekspor ringkasan"],
-    data: ["Registrasi surat", "Disposisi", "Periode laporan"],
-    links: [{ key: "tu-surat-masuk", label: "Surat Masuk" }, { key: "tu-surat-keluar", label: "Surat Keluar" }],
-  },
-
-  "sarpras-inventaris": {
-    icon: "📦", group: "Sarana & Prasarana", title: "Inventaris Barang",
-    purpose: "Struktur master inventaris aset, barang habis pakai, serta lokasi penempatannya.",
-    scope: ["Kode inventaris", "Nama dan kategori barang", "Lokasi/ruang", "Jumlah, kondisi, dan nilai perolehan"],
-    data: ["Identitas aset", "Kategori", "Lokasi", "Kondisi dan jumlah"],
-    links: [{ key: "sarpras-pemeliharaan", label: "Kondisi & Pemeliharaan" }],
-  },
-  "sarpras-peminjaman": {
-    icon: "🔑", group: "Sarana & Prasarana", title: "Peminjaman Aset",
-    purpose: "Struktur pencatatan peminjaman barang, ruang, dan pengembalian aset sekolah.",
-    scope: ["Peminjam", "Barang/ruang", "Waktu pinjam dan kembali", "Persetujuan serta status pengembalian"],
-    data: ["Aset", "Peminjam", "Tanggal transaksi", "Status persetujuan"],
-    links: [{ key: "sarpras-inventaris", label: "Inventaris Barang" }],
-  },
-  "sarpras-pemeliharaan": {
-    icon: "🛠️", group: "Sarana & Prasarana", title: "Kondisi & Pemeliharaan",
-    purpose: "Struktur pelaporan kerusakan, jadwal perawatan, dan riwayat pemeliharaan aset.",
-    scope: ["Kondisi baik/rusak", "Laporan kerusakan", "Jadwal pemeliharaan", "Biaya dan riwayat perbaikan"],
-    data: ["Aset", "Kondisi", "Uraian tindakan", "Tanggal dan biaya"],
-    links: [{ key: "sarpras-inventaris", label: "Inventaris Barang" }],
-  },
-  "sarpras-laporan": {
-    icon: "📋", group: "Sarana & Prasarana", title: "Laporan Sarpras",
-    purpose: "Struktur laporan inventaris, kondisi aset, peminjaman, dan kebutuhan pengadaan.",
-    scope: ["Rekap per kategori", "Kondisi aset", "Riwayat peminjaman", "Daftar kebutuhan/pengadaan"],
-    data: ["Inventaris", "Pemeliharaan", "Peminjaman aset"],
-    links: [{ key: "sarpras-inventaris", label: "Inventaris Barang" }, { key: "sarpras-pemeliharaan", label: "Pemeliharaan" }],
-  },
-
-  "kepsek-dashboard": {
-    icon: "📡", group: "Kepala Sekolah", title: "Dashboard Monitoring",
-    purpose: "Ruang monitoring indikator utama sekolah sebagai dasar pengambilan keputusan Kepala Sekolah.",
-    scope: ["Jumlah siswa, guru, dan kelas", "Kehadiran harian", "Ringkasan nilai", "Status modul dan laporan"],
-    data: ["Data siswa", "Data guru", "Absensi", "Nilai akademik"],
-    links: [{ key: "dashboard", label: "Dashboard Utama" }, { key: "kepsek-akademik", label: "Monitoring Akademik" }],
-    monitoring: true,
-  },
-  "kepsek-akademik": {
-    icon: "🎓", group: "Kepala Sekolah", title: "Monitoring Akademik",
-    purpose: "Struktur pemantauan pencapaian nilai, kegiatan mengajar, dan perkembangan akademik sekolah.",
-    scope: ["Rata-rata nilai per mapel", "Nilai di bawah KKM", "Jurnal mengajar", "Rekap kelas dan semester"],
-    data: ["Nilai Akademik", "Input Nilai", "Jurnal Mengajar", "Data mapel dan KKM"],
-    links: [{ key: "nilai", label: "Nilai Akademik" }, { key: "jurnal-mengajar", label: "Jurnal Mengajar" }],
-  },
-  "kepsek-kehadiran": {
-    icon: "✅", group: "Kepala Sekolah", title: "Monitoring Kehadiran",
-    purpose: "Struktur pemantauan kehadiran siswa per kelas dan per mata pelajaran.",
-    scope: ["Persentase hadir", "Rekap sakit, izin, dan alpa", "Filter kelas/periode", "Siswa yang perlu tindak lanjut"],
-    data: ["Absensi", "Absensi Siswa per Mapel", "Data kelas dan siswa"],
-    links: [{ key: "absensi", label: "Absensi Harian" }, { key: "absensi-siswa", label: "Absensi Siswa per Mapel" }],
-  },
-  "kepsek-sarpras": {
-    icon: "🏢", group: "Kepala Sekolah", title: "Monitoring Sarpras",
-    purpose: "Struktur pemantauan ketersediaan, kondisi, dan kebutuhan sarana prasarana.",
-    scope: ["Ringkasan inventaris", "Aset rusak/perlu perawatan", "Peminjaman aktif", "Kebutuhan pengadaan"],
-    data: ["Inventaris barang", "Pemeliharaan", "Peminjaman aset"],
-    links: [{ key: "sarpras-inventaris", label: "Inventaris Barang" }, { key: "sarpras-laporan", label: "Laporan Sarpras" }],
-  },
-  "kepsek-laporan": {
-    icon: "🗒️", group: "Kepala Sekolah", title: "Laporan Sekolah",
-    purpose: "Struktur pusat ringkasan laporan akademik, kehadiran, perpustakaan, persuratan, dan sarpras.",
-    scope: ["Pilih periode laporan", "Ringkasan tiap unit", "Status data pendukung", "Ekspor atau cetak laporan"],
-    data: ["Akademik", "Kehadiran", "Perpustakaan", "Persuratan dan sarpras"],
-    links: [{ key: "kepsek-dashboard", label: "Dashboard Monitoring" }, { key: "kepsek-akademik", label: "Monitoring Akademik" }],
-  },
+/* ---- MODUL OPERASIONAL: WALI KELAS, PERPUSTAKAAN, TU, SARPRAS, KEPSEK ---- */
+const SUPPORT_BADGES = {
+  Aktif: "badge-green", Baik: "badge-green", Selesai: "badge-green", Terkirim: "badge-green", Dikembalikan: "badge-green", Hadir: "badge-green",
+  Dipinjam: "badge-blue", Diproses: "badge-blue", Baru: "badge-blue", Terjadwal: "badge-blue", Izin: "badge-blue",
+  "Perlu Perawatan": "badge-orange", Sakit: "badge-orange", Terlambat: "badge-orange", Konsep: "badge-gray", Alpa: "badge-red", Rusak: "badge-red",
 };
+function supportBadge(value) { return `<span class="badge ${SUPPORT_BADGES[value] || "badge-gray"}">${escapeHtml(value || "-")}</span>`; }
+function activeSiswa() { return DB.get("siswa").filter((s) => s.status === "Aktif"); }
+function todayISO() { return new Date().toISOString().slice(0, 10); }
+function optionList(items, selected, emptyLabel) {
+  const empty = emptyLabel !== undefined ? `<option value="">${escapeHtml(emptyLabel)}</option>` : "";
+  return empty + items.map((item) => `<option value="${escapeHtml(item.value)}" ${String(item.value) === String(selected) ? "selected" : ""}>${escapeHtml(item.label)}</option>`).join("");
+}
+function kelasOptionList(selected, emptyLabel) { return optionList(DB.get("kelas").map((k) => ({ value: k.nama, label: k.nama })), selected, emptyLabel); }
+function guruOptionList(selected, emptyLabel) { return optionList(DB.get("guru").filter((g) => g.status === "Aktif").map((g) => ({ value: g.id, label: `${g.nama} — ${g.mapel}` })), selected, emptyLabel); }
+function siswaOptionList(selected, className, emptyLabel) {
+  return optionList(activeSiswa().filter((s) => !className || s.kelas === className).map((s) => ({ value: s.id, label: `${s.nama} (${s.kelas})` })), selected, emptyLabel);
+}
+function memberRecords() {
+  return [
+    ...activeSiswa().map((s) => ({ value: `siswa:${s.id}`, label: `${s.nama} — Siswa ${s.kelas}`, tipe: "siswa", id: s.id })),
+    ...DB.get("guru").filter((g) => g.status === "Aktif").map((g) => ({ value: `guru:${g.id}`, label: `${g.nama} — Guru`, tipe: "guru", id: g.id })),
+  ];
+}
+function memberName(type, id) {
+  const row = DB.findById(type === "guru" ? "guru" : "siswa", id);
+  return row ? row.nama : "-";
+}
+function currentTendikId() { return session.role === "tendik" ? session.linkedId : ""; }
 
-function renderStructureModule(key) {
+function openDataForm({ title, fields, values = {}, submitLabel = "Simpan", onSave }) {
+  const existing = document.getElementById("dataFormBackdrop");
+  if (existing) existing.remove();
+  const fieldHtml = fields.map((field) => {
+    const value = values[field.key] !== undefined && values[field.key] !== null ? values[field.key] : (field.value || "");
+    const required = field.required ? "required" : "";
+    const full = field.full ? " full" : "";
+    let input = "";
+    if (field.type === "select") input = `<select id="dataField_${field.key}" ${required}>${optionList(field.options || [], value, field.emptyLabel)}</select>`;
+    else if (field.type === "textarea") input = `<textarea id="dataField_${field.key}" rows="${field.rows || 3}" ${required}>${escapeHtml(value)}</textarea>`;
+    else input = `<input type="${field.type || "text"}" id="dataField_${field.key}" value="${escapeHtml(value)}" ${field.min !== undefined ? `min="${field.min}"` : ""} ${field.max !== undefined ? `max="${field.max}"` : ""} ${required} />`;
+    return `<div class="field${full}"><label>${escapeHtml(field.label)}</label>${input}</div>`;
+  }).join("");
+  const backdrop = document.createElement("div");
+  backdrop.className = "modal-backdrop show";
+  backdrop.id = "dataFormBackdrop";
+  backdrop.innerHTML = `<div class="modal modal-lg"><div class="modal-head"><h3>${escapeHtml(title)}</h3><button type="button" class="modal-close" id="dataFormClose">✕</button></div><form id="dataDynamicForm"><div class="modal-body"><div class="form-grid">${fieldHtml}</div></div><div class="modal-foot"><button type="button" class="btn btn-outline" id="dataFormCancel">Batal</button><button type="submit" class="btn btn-blue">💾 ${escapeHtml(submitLabel)}</button></div></form></div>`;
+  document.body.appendChild(backdrop);
+  const close = () => backdrop.remove();
+  backdrop.addEventListener("click", (event) => { if (event.target === backdrop) close(); });
+  document.getElementById("dataFormClose").addEventListener("click", close);
+  document.getElementById("dataFormCancel").addEventListener("click", close);
+  document.getElementById("dataDynamicForm").addEventListener("submit", (event) => {
+    event.preventDefault();
+    const payload = {};
+    fields.forEach((field) => {
+      const value = document.getElementById(`dataField_${field.key}`).value;
+      payload[field.key] = field.type === "number" ? Number(value) : value.trim();
+    });
+    if (onSave(payload) !== false) close();
+  });
+}
+function deleteSupportRecord(collection, id, title, message, rerender) {
+  confirmDialog({ title, message, confirmText: "Ya, Hapus", onConfirm: () => { DB.remove(collection, id); showToast("Data berhasil dihapus.", "success"); rerender(); } });
+}
+function pageEmpty(icon, message) { return `<div class="card"><div class="empty-state"><div class="ic">${icon}</div>${escapeHtml(message)}</div></div>`; }
+
+/* ---- WALI KELAS (GURU) ---- */
+function waliAllowedClasses() {
+  if (session.role === "admin") return DB.get("kelas").map((k) => k.nama);
+  const guru = DB.findById("guru", session.linkedId);
+  return guru && guru.waliKelas ? [guru.waliKelas] : [];
+}
+function waliClassState(key) {
+  const classes = waliAllowedClasses();
+  if (!window[key] || !classes.includes(window[key].kelas)) window[key] = { kelas: classes[0] || "", tanggal: todayISO() };
+  return window[key];
+}
+function waliClassToolbar(state, id, withDate = false) {
+  const classes = waliAllowedClasses();
+  return `<div class="toolbar"><div class="toolbar-left"><select class="select-filter" id="${id}Kelas">${optionList(classes.map((name) => ({ value: name, label: name })), state.kelas, "Pilih Kelas")}</select>${withDate ? `<input type="date" class="select-filter" id="${id}Tanggal" value="${state.tanggal}" />` : ""}</div></div>`;
+}
+function bindWaliToolbar(state, id, rerender, withDate = false) {
+  const kelas = document.getElementById(`${id}Kelas`);
+  if (kelas) kelas.addEventListener("change", (event) => { state.kelas = event.target.value; rerender(); });
+  const tanggal = document.getElementById(`${id}Tanggal`);
+  if (withDate && tanggal) tanggal.addEventListener("change", (event) => { state.tanggal = event.target.value; rerender(); });
+}
+function renderWaliRingkasan() {
   const content = document.getElementById("pageContent");
-  const module = STRUCTURE_MODULES[key];
-  if (!module) {
-    content.innerHTML = `<div class="card"><div class="empty-state"><div class="ic">🧭</div>Struktur modul tidak ditemukan.</div></div>`;
-    return;
-  }
-  const scopeItems = module.scope.map((item) => `<li style="margin-bottom:8px;">${escapeHtml(item)}</li>`).join("");
-  const dataItems = module.data.map((item) => `<li style="margin-bottom:8px;">${escapeHtml(item)}</li>`).join("");
-  const links = module.links.map((link) => `<a class="btn btn-outline btn-sm" href="#${link.key}">${escapeHtml(link.label)} →</a>`).join("");
-  const today = new Date().toISOString().slice(0, 10);
-  const monitoring = module.monitoring ? `
-    <div class="stat-grid" style="margin-bottom:16px;">
-      <div class="stat-card"><div class="stat-info"><div class="label">Siswa Aktif</div><div class="value">${DB.get("siswa").filter((s) => s.status === "Aktif").length}</div></div><div class="stat-icon icon-blue">🧑‍🎓</div></div>
-      <div class="stat-card"><div class="stat-info"><div class="label">Guru Aktif</div><div class="value">${DB.get("guru").filter((g) => g.status === "Aktif").length}</div></div><div class="stat-icon icon-purple">🧑‍🏫</div></div>
-      <div class="stat-card"><div class="stat-info"><div class="label">Kelas Aktif</div><div class="value">${DB.get("kelas").length}</div></div><div class="stat-icon icon-orange">🏫</div></div>
-      <div class="stat-card"><div class="stat-info"><div class="label">Absensi Hari Ini</div><div class="value">${DB.get("absensi").filter((a) => a.tanggal === today && a.status === "Hadir").length}</div><div class="delta">siswa hadir tercatat</div></div><div class="stat-icon icon-green">✅</div></div>
-    </div>` : "";
+  const state = waliClassState("waliRingkasanState");
+  if (!state.kelas) { content.innerHTML = pageEmpty("🏫", "Akun guru ini belum ditetapkan sebagai wali kelas."); return; }
+  const siswa = activeSiswa().filter((s) => s.kelas === state.kelas);
+  const kelas = DB.get("kelas").find((k) => k.nama === state.kelas) || {};
+  const wali = DB.findById("guru", kelas.waliId) || {};
+  const todayAbsensi = DB.get("absensi").filter((a) => a.tanggal === todayISO() && siswa.some((s) => s.id === a.siswaId));
+  const count = (status) => todayAbsensi.filter((a) => a.status === status).length;
+  content.innerHTML = `${waliClassToolbar(state, "wr")}
+    <div class="card" style="margin-bottom:16px;"><div class="flex gap-12" style="align-items:center;"><div class="stat-icon icon-blue">🏫</div><div><div class="text-muted" style="font-size:12px;">Wali Kelas</div><h3 style="margin:3px 0;">${escapeHtml(state.kelas)} — ${escapeHtml(wali.nama || "Belum ditentukan")}</h3><div class="text-muted" style="font-size:13px;">Ruang ${escapeHtml(kelas.ruang || "-")}</div></div></div></div>
+    <div class="stat-grid"><div class="stat-card"><div class="stat-info"><div class="label">Siswa Aktif</div><div class="value">${siswa.length}</div></div><div class="stat-icon icon-blue">🧑‍🎓</div></div><div class="stat-card"><div class="stat-info"><div class="label">Hadir Hari Ini</div><div class="value">${count("Hadir")}</div></div><div class="stat-icon icon-green">✅</div></div><div class="stat-card"><div class="stat-info"><div class="label">Sakit / Izin</div><div class="value">${count("Sakit") + count("Izin")}</div></div><div class="stat-icon icon-orange">📅</div></div><div class="stat-card"><div class="stat-info"><div class="label">Alpa</div><div class="value">${count("Alpa")}</div></div><div class="stat-icon icon-red">❌</div></div></div>`;
+  bindWaliToolbar(state, "wr", renderWaliRingkasan);
+}
+function renderWaliSiswa() {
+  const content = document.getElementById("pageContent");
+  const state = waliClassState("waliSiswaState");
+  if (!state.kelas) { content.innerHTML = pageEmpty("🧑‍🎓", "Akun guru ini belum ditetapkan sebagai wali kelas."); return; }
+  const siswa = activeSiswa().filter((s) => s.kelas === state.kelas);
+  const rows = siswa.map((s) => `<tr><td><div class="table-avatar"><div class="avatar">${initials(s.nama)}</div><div><div class="tname">${escapeHtml(s.nama)}</div><div class="tsub">NIS: ${escapeHtml(s.nis)}</div></div></div></td><td>${escapeHtml(s.jk === "L" ? "Laki-laki" : "Perempuan")}</td><td>${escapeHtml(s.namaOrtu || "-")}</td><td>${escapeHtml(s.telepon || "-")}</td><td>${supportBadge(s.status)}</td></tr>`).join("");
+  content.innerHTML = `${waliClassToolbar(state, "ws")}<div class="table-wrap">${siswa.length ? `<table><thead><tr><th>Siswa</th><th>JK</th><th>Orang Tua/Wali</th><th>Telepon</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table>` : `<div class="empty-state"><div class="ic">🧑‍🎓</div>Belum ada siswa aktif di kelas ini.</div>`}</div>`;
+  bindWaliToolbar(state, "ws", renderWaliSiswa);
+}
+function renderWaliAbsensi() {
+  const content = document.getElementById("pageContent");
+  const state = waliClassState("waliAbsensiState");
+  if (!state.kelas) { content.innerHTML = pageEmpty("📅", "Akun guru ini belum ditetapkan sebagai wali kelas."); return; }
+  const siswa = activeSiswa().filter((s) => s.kelas === state.kelas);
+  const data = DB.get("absensi").filter((a) => a.tanggal === state.tanggal && siswa.some((s) => s.id === a.siswaId));
+  const count = (status) => data.filter((a) => a.status === status).length;
+  const rows = siswa.map((s) => { const absen = data.find((a) => a.siswaId === s.id); return `<tr><td>${escapeHtml(s.nama)}</td><td>${escapeHtml(s.nis)}</td><td>${supportBadge(absen ? absen.status : "Belum Tercatat")}</td></tr>`; }).join("");
+  content.innerHTML = `${waliClassToolbar(state, "wa", true)}<div class="stat-grid" style="margin-bottom:16px;">${["Hadir","Sakit","Izin","Alpa"].map((status) => `<div class="stat-card"><div class="stat-info"><div class="label">${status}</div><div class="value">${count(status)}</div></div><div class="stat-icon ${status === "Hadir" ? "icon-green" : status === "Alpa" ? "icon-red" : "icon-orange"}">${status === "Hadir" ? "✅" : status === "Alpa" ? "❌" : "📅"}</div></div>`).join("")}</div><div class="table-wrap"><table><thead><tr><th>Nama Siswa</th><th>NIS</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+  bindWaliToolbar(state, "wa", renderWaliAbsensi, true);
+}
+function renderWaliCatatan() {
+  const content = document.getElementById("pageContent");
+  const state = waliClassState("waliCatatanState");
+  if (!state.kelas) { content.innerHTML = pageEmpty("📒", "Akun guru ini belum ditetapkan sebagai wali kelas."); return; }
+  const siswa = activeSiswa().filter((s) => s.kelas === state.kelas);
+  let records = DB.get("waliCatatan").filter((r) => siswa.some((s) => s.id === r.siswaId));
+  if (session.role === "guru") records = records.filter((r) => r.guruId === session.linkedId);
+  records.sort((a, b) => b.tanggal.localeCompare(a.tanggal));
+  const rows = records.map((r) => { const s = DB.findById("siswa", r.siswaId) || {}; const g = DB.findById("guru", r.guruId) || {}; return `<tr><td>${formatDate(r.tanggal)}</td><td><div class="tname">${escapeHtml(s.nama || "-")}</div><div class="tsub">${escapeHtml(s.kelas || "-")}</div></td><td>${supportBadge(r.kategori)}</td><td><div class="tname">${escapeHtml(r.isi)}</div><div class="tsub">${escapeHtml(r.tindakLanjut || "-")}</div></td><td>${escapeHtml(g.nama || "-")}</td><td><div class="row-actions"><button class="action-btn" onclick="editWaliCatatan('${r.id}')" title="Edit">✏️</button><button class="action-btn danger" onclick="deleteWaliCatatan('${r.id}')" title="Hapus">🗑️</button></div></td></tr>`; }).join("");
+  content.innerHTML = `${waliClassToolbar(state, "wc")}<div class="toolbar"><div></div><button class="btn btn-blue" id="btnAddWaliCatatan">➕ Tambah Catatan</button></div>${records.length ? `<div class="table-wrap"><table><thead><tr><th>Tanggal</th><th>Siswa</th><th>Kategori</th><th>Catatan & Tindak Lanjut</th><th>Wali Kelas</th><th>Aksi</th></tr></thead><tbody>${rows}</tbody></table></div>` : pageEmpty("📒", "Belum ada catatan wali kelas.")}`;
+  bindWaliToolbar(state, "wc", renderWaliCatatan);
+  document.getElementById("btnAddWaliCatatan").addEventListener("click", () => openWaliCatatanForm());
+}
+function waliCatatanFields(className) { return [
+  { key: "tanggal", label: "Tanggal", type: "date", required: true },
+  { key: "siswaId", label: "Siswa", type: "select", options: activeSiswa().filter((s) => s.kelas === className).map((s) => ({ value: s.id, label: s.nama })), required: true },
+  { key: "kategori", label: "Kategori", type: "select", options: ["Akademik","Sikap","Kedisiplinan","Kehadiran","Prestasi"].map((x) => ({ value: x, label: x })), required: true },
+  { key: "isi", label: "Catatan", type: "textarea", full: true, required: true },
+  { key: "tindakLanjut", label: "Tindak Lanjut", type: "textarea", full: true },
+]; }
+window.openWaliCatatanForm = function(record) {
+  const state = waliClassState("waliCatatanState");
+  if (record && session.role === "guru" && record.guruId !== session.linkedId) { showToast("Anda tidak berhak mengubah catatan ini.", "error"); return; }
+  openDataForm({ title: record ? "Edit Catatan Wali Kelas" : "Tambah Catatan Wali Kelas", fields: waliCatatanFields(state.kelas), values: record || { tanggal: todayISO() }, submitLabel: "Simpan Catatan", onSave: (payload) => { const guruId = session.role === "guru" ? session.linkedId : (record ? record.guruId : (DB.get("kelas").find((k) => k.nama === state.kelas) || {}).waliId || ""); if (record) DB.update("waliCatatan", record.id, payload); else DB.insert("waliCatatan", { ...payload, guruId }); showToast("Catatan wali kelas berhasil disimpan.", "success"); renderWaliCatatan(); } });
+};
+window.editWaliCatatan = (id) => { const record = DB.findById("waliCatatan", id); if (record) openWaliCatatanForm(record); };
+window.deleteWaliCatatan = (id) => { const record = DB.findById("waliCatatan", id); if (record && session.role === "guru" && record.guruId !== session.linkedId) { showToast("Anda tidak berhak menghapus catatan ini.", "error"); return; } deleteSupportRecord("waliCatatan", id, "Hapus Catatan?", "Catatan wali kelas akan dihapus permanen.", renderWaliCatatan); };
 
-  content.innerHTML = `
-    ${monitoring}
-    <div class="card" style="margin-bottom:16px;">
-      <div class="flex-between" style="align-items:flex-start; gap:16px;">
-        <div class="flex gap-12" style="align-items:flex-start;">
-          <div class="stat-icon icon-blue" style="width:46px; height:46px; font-size:22px; flex-shrink:0;">${module.icon}</div>
-          <div><div class="flex gap-8" style="align-items:center; margin-bottom:7px;"><span class="badge badge-blue">Struktur Awal</span><span class="text-muted" style="font-size:12px;">${escapeHtml(module.group)}</span></div><h3 style="margin:0 0 7px;">${escapeHtml(module.title)}</h3><p class="text-muted" style="margin:0; line-height:1.6; font-size:13.5px;">${escapeHtml(module.purpose)}</p></div>
-        </div>
-      </div>
-    </div>
-    <div class="grid-2">
-      <div class="card"><div class="card-head"><div><h3>Ruang Lingkup</h3><p>Susunan fitur yang disiapkan</p></div></div><ul style="margin:0; padding-left:20px; font-size:13.5px; line-height:1.45;">${scopeItems}</ul></div>
-      <div class="card"><div class="card-head"><div><h3>Data yang Dibutuhkan</h3><p>Landasan data untuk tahap implementasi</p></div></div><ul style="margin:0; padding-left:20px; font-size:13.5px; line-height:1.45;">${dataItems}</ul></div>
-    </div>
-    <div class="card" style="margin-top:16px;"><div class="card-head"><div><h3>Integrasi Sistem</h3><p>Menu terkait yang dapat menjadi sumber data awal</p></div></div><div class="flex gap-8" style="flex-wrap:wrap;">${links}</div><div class="text-muted" style="font-size:12.5px; margin-top:18px; padding-top:14px; border-top:1px solid var(--border);">Tahap ini membentuk navigasi dan rancangan halaman. Form, data contoh, hak akses petugas khusus, serta laporan operasional dapat disesuaikan setelah struktur disetujui.</div></div>`;
+/* ---- PERPUSTAKAAN (GURU) ---- */
+function renderPerpusKoleksi() {
+  const content = document.getElementById("pageContent");
+  const records = [...DB.get("buku")].sort((a, b) => a.judul.localeCompare(b.judul));
+  const rows = records.map((b) => `<tr><td><span class="badge badge-gray">${escapeHtml(b.kode)}</span></td><td><div class="tname">${escapeHtml(b.judul)}</div><div class="tsub">${escapeHtml(b.penulis)} • ${escapeHtml(b.tahun)}</div></td><td>${escapeHtml(b.kategori)}</td><td>${escapeHtml(b.lokasi)}</td><td>${b.stok}</td><td>${supportBadge(b.kondisi)}</td><td><div class="row-actions"><button class="action-btn" onclick="editBuku('${b.id}')" title="Edit">✏️</button><button class="action-btn danger" onclick="deleteBuku('${b.id}')" title="Hapus">🗑️</button></div></td></tr>`).join("");
+  content.innerHTML = `<div class="toolbar"><div></div><button class="btn btn-blue" id="btnAddBuku">➕ Tambah Buku</button></div>${records.length ? `<div class="table-wrap"><table><thead><tr><th>Kode</th><th>Buku</th><th>Kategori</th><th>Lokasi</th><th>Stok</th><th>Kondisi</th><th>Aksi</th></tr></thead><tbody>${rows}</tbody></table></div>` : pageEmpty("📚", "Belum ada koleksi buku.")}`;
+  document.getElementById("btnAddBuku").addEventListener("click", () => openBukuForm());
+}
+function bukuFields() { return [
+  { key: "kode", label: "Kode Buku", required: true }, { key: "judul", label: "Judul Buku", required: true, full: true }, { key: "penulis", label: "Penulis", required: true }, { key: "kategori", label: "Kategori", type: "select", options: ["Pelajaran","Fiksi","Nonfiksi","Referensi","Majalah"].map((x) => ({ value: x, label: x })), required: true }, { key: "tahun", label: "Tahun Terbit" }, { key: "lokasi", label: "Lokasi Rak", required: true }, { key: "stok", label: "Stok", type: "number", min: 0, required: true }, { key: "kondisi", label: "Kondisi", type: "select", options: ["Baik","Perlu Perawatan","Rusak"].map((x) => ({ value: x, label: x })), required: true },
+]; }
+window.openBukuForm = function(record) { openDataForm({ title: record ? "Edit Koleksi Buku" : "Tambah Koleksi Buku", fields: bukuFields(), values: record || { stok: 1, kondisi: "Baik", kategori: "Pelajaran" }, submitLabel: "Simpan Buku", onSave: (payload) => { if (record) DB.update("buku", record.id, payload); else DB.insert("buku", payload); showToast("Data buku berhasil disimpan.", "success"); renderPerpusKoleksi(); } }); };
+window.editBuku = (id) => { const record = DB.findById("buku", id); if (record) openBukuForm(record); };
+window.deleteBuku = (id) => deleteSupportRecord("buku", id, "Hapus Buku?", "Data koleksi buku akan dihapus permanen.", renderPerpusKoleksi);
+
+function renderPerpusSirkulasi() {
+  const content = document.getElementById("pageContent");
+  const records = [...DB.get("peminjamanBuku")].sort((a, b) => b.tanggalPinjam.localeCompare(a.tanggalPinjam));
+  const rows = records.map((p) => { const buku = DB.findById("buku", p.bukuId) || {}; const terlambat = p.status === "Dipinjam" && p.jatuhTempo < todayISO(); return `<tr><td><div class="tname">${escapeHtml(buku.judul || "Buku dihapus")}</div><div class="tsub">${escapeHtml(buku.kode || "-")}</div></td><td>${escapeHtml(memberName(p.anggotaTipe, p.anggotaId))}</td><td>${formatDate(p.tanggalPinjam)}<div class="tsub">Jatuh tempo: ${formatDate(p.jatuhTempo)}</div></td><td>${p.tanggalKembali ? formatDate(p.tanggalKembali) : "-"}</td><td>${terlambat ? supportBadge("Terlambat") : supportBadge(p.status)}</td><td><div class="row-actions">${p.status === "Dipinjam" ? `<button class="action-btn" onclick="returnBuku('${p.id}')" title="Tandai dikembalikan">↩️</button>` : ""}<button class="action-btn" onclick="editPeminjamanBuku('${p.id}')" title="Edit">✏️</button><button class="action-btn danger" onclick="deletePeminjamanBuku('${p.id}')" title="Hapus">🗑️</button></div></td></tr>`; }).join("");
+  content.innerHTML = `<div class="toolbar"><div></div><button class="btn btn-blue" id="btnAddPinjamBuku">➕ Catat Peminjaman</button></div>${records.length ? `<div class="table-wrap"><table><thead><tr><th>Buku</th><th>Peminjam</th><th>Tanggal Pinjam</th><th>Dikembalikan</th><th>Status</th><th>Aksi</th></tr></thead><tbody>${rows}</tbody></table></div>` : pageEmpty("🔄", "Belum ada transaksi peminjaman.")}`;
+  document.getElementById("btnAddPinjamBuku").addEventListener("click", () => openPeminjamanBukuForm());
+}
+function peminjamanBukuFields() { return [
+  { key: "bukuId", label: "Buku", type: "select", options: DB.get("buku").map((b) => ({ value: b.id, label: `${b.kode} — ${b.judul}` })), required: true },
+  { key: "anggota", label: "Peminjam", type: "select", options: memberRecords(), required: true },
+  { key: "tanggalPinjam", label: "Tanggal Pinjam", type: "date", required: true }, { key: "jatuhTempo", label: "Jatuh Tempo", type: "date", required: true }, { key: "status", label: "Status", type: "select", options: ["Dipinjam","Dikembalikan"].map((x) => ({ value: x, label: x })), required: true },
+]; }
+window.openPeminjamanBukuForm = function(record) { const values = record ? { ...record, anggota: `${record.anggotaTipe}:${record.anggotaId}` } : { tanggalPinjam: todayISO(), jatuhTempo: todayISO(), status: "Dipinjam" }; openDataForm({ title: record ? "Edit Peminjaman Buku" : "Catat Peminjaman Buku", fields: peminjamanBukuFields(), values, submitLabel: "Simpan Transaksi", onSave: (payload) => { const [anggotaTipe, anggotaId] = payload.anggota.split(":"); const saved = { bukuId: payload.bukuId, anggotaTipe, anggotaId, tanggalPinjam: payload.tanggalPinjam, jatuhTempo: payload.jatuhTempo, status: payload.status, tanggalKembali: payload.status === "Dikembalikan" ? (record?.tanggalKembali || todayISO()) : "", petugasId: session.role === "guru" ? session.linkedId : (record?.petugasId || "") }; if (record) DB.update("peminjamanBuku", record.id, saved); else DB.insert("peminjamanBuku", saved); showToast("Transaksi buku berhasil disimpan.", "success"); renderPerpusSirkulasi(); } }); };
+window.editPeminjamanBuku = (id) => { const record = DB.findById("peminjamanBuku", id); if (record) openPeminjamanBukuForm(record); };
+window.returnBuku = (id) => { DB.update("peminjamanBuku", id, { status: "Dikembalikan", tanggalKembali: todayISO() }); showToast("Buku ditandai telah dikembalikan.", "success"); renderPerpusSirkulasi(); };
+window.deletePeminjamanBuku = (id) => deleteSupportRecord("peminjamanBuku", id, "Hapus Transaksi?", "Transaksi peminjaman akan dihapus.", renderPerpusSirkulasi);
+
+function renderPerpusAnggota() {
+  const content = document.getElementById("pageContent");
+  const siswa = activeSiswa(); const guru = DB.get("guru").filter((g) => g.status === "Aktif"); const loans = DB.get("peminjamanBuku").filter((p) => p.status === "Dipinjam");
+  const rows = [...siswa.map((s) => ({ nama: s.nama, info: `Siswa ${s.kelas}`, tipe: "Siswa", id: s.id })), ...guru.map((g) => ({ nama: g.nama, info: g.mapel, tipe: "Guru", id: g.id }))].sort((a,b) => a.nama.localeCompare(b.nama)).map((m) => `<tr><td><div class="table-avatar"><div class="avatar">${initials(m.nama)}</div><div><div class="tname">${escapeHtml(m.nama)}</div><div class="tsub">${escapeHtml(m.info)}</div></div></div></td><td>${supportBadge(m.tipe)}</td><td>${loans.filter((p) => p.anggotaTipe.toLowerCase() === m.tipe.toLowerCase() && p.anggotaId === m.id).length}</td><td>${supportBadge("Aktif")}</td></tr>`).join("");
+  content.innerHTML = `<div class="stat-grid" style="margin-bottom:16px;"><div class="stat-card"><div class="stat-info"><div class="label">Anggota Siswa</div><div class="value">${siswa.length}</div></div><div class="stat-icon icon-blue">🧑‍🎓</div></div><div class="stat-card"><div class="stat-info"><div class="label">Anggota Guru</div><div class="value">${guru.length}</div></div><div class="stat-icon icon-purple">🧑‍🏫</div></div><div class="stat-card"><div class="stat-info"><div class="label">Pinjaman Aktif</div><div class="value">${loans.length}</div></div><div class="stat-icon icon-orange">📚</div></div></div><div class="table-wrap"><table><thead><tr><th>Anggota</th><th>Jenis</th><th>Pinjaman Aktif</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+}
+function renderPerpusLaporan() {
+  const content = document.getElementById("pageContent");
+  const books = DB.get("buku"); const loans = DB.get("peminjamanBuku"); const active = loans.filter((p) => p.status === "Dipinjam"); const late = active.filter((p) => p.jatuhTempo < todayISO());
+  const categoryRows = [...new Set(books.map((b) => b.kategori))].map((category) => { const list = books.filter((b) => b.kategori === category); return `<tr><td>${escapeHtml(category)}</td><td>${list.length}</td><td>${list.reduce((total, book) => total + Number(book.stok || 0), 0)}</td></tr>`; }).join("");
+  content.innerHTML = `<div class="stat-grid" style="margin-bottom:16px;"><div class="stat-card"><div class="stat-info"><div class="label">Judul Koleksi</div><div class="value">${books.length}</div></div><div class="stat-icon icon-blue">📚</div></div><div class="stat-card"><div class="stat-info"><div class="label">Eksemplar</div><div class="value">${books.reduce((total, b) => total + Number(b.stok || 0), 0)}</div></div><div class="stat-icon icon-purple">📖</div></div><div class="stat-card"><div class="stat-info"><div class="label">Dipinjam</div><div class="value">${active.length}</div></div><div class="stat-icon icon-orange">🔄</div></div><div class="stat-card"><div class="stat-info"><div class="label">Terlambat</div><div class="value">${late.length}</div></div><div class="stat-icon icon-red">⚠️</div></div></div><div class="table-wrap"><table><thead><tr><th>Kategori</th><th>Judul</th><th>Total Stok</th></tr></thead><tbody>${categoryRows || `<tr><td colspan="3">Belum ada data koleksi.</td></tr>`}</tbody></table></div>`;
+}
+
+/* ---- TU & PERSURATAN DIGITAL (TENAGA PENDIDIK) ---- */
+function renderSuratMasuk() {
+  const content = document.getElementById("pageContent");
+  const records = [...DB.get("suratMasuk")].sort((a, b) => b.tanggal.localeCompare(a.tanggal));
+  const rows = records.map((s) => `<tr><td>${escapeHtml(s.nomorAgenda)}</td><td><div class="tname">${escapeHtml(s.perihal)}</div><div class="tsub">${escapeHtml(s.nomorSurat)}</div></td><td>${escapeHtml(s.pengirim)}</td><td>${formatDate(s.tanggal)}</td><td>${supportBadge(s.status)}</td><td><div class="row-actions"><button class="action-btn" onclick="editSuratMasuk('${s.id}')" title="Edit">✏️</button><button class="action-btn danger" onclick="deleteSuratMasuk('${s.id}')" title="Hapus">🗑️</button></div></td></tr>`).join("");
+  content.innerHTML = `<div class="toolbar"><div></div><button class="btn btn-blue" id="btnAddSuratMasuk">➕ Registrasi Surat Masuk</button></div>${records.length ? `<div class="table-wrap"><table><thead><tr><th>No. Agenda</th><th>Perihal / No. Surat</th><th>Pengirim</th><th>Tanggal</th><th>Status</th><th>Aksi</th></tr></thead><tbody>${rows}</tbody></table></div>` : pageEmpty("📥", "Belum ada surat masuk.")}`;
+  document.getElementById("btnAddSuratMasuk").addEventListener("click", () => openSuratMasukForm());
+}
+function suratMasukFields() { return [
+  { key: "nomorAgenda", label: "Nomor Agenda", required: true }, { key: "nomorSurat", label: "Nomor Surat", required: true }, { key: "tanggal", label: "Tanggal Surat", type: "date", required: true }, { key: "pengirim", label: "Pengirim", required: true }, { key: "perihal", label: "Perihal", type: "textarea", full: true, required: true }, { key: "status", label: "Status", type: "select", options: ["Baru","Sudah Didisposisikan","Selesai"].map((x) => ({ value: x, label: x })), required: true },
+]; }
+window.openSuratMasukForm = function(record) { openDataForm({ title: record ? "Edit Surat Masuk" : "Registrasi Surat Masuk", fields: suratMasukFields(), values: record || { tanggal: todayISO(), status: "Baru" }, submitLabel: "Simpan Surat", onSave: (payload) => { if (record) DB.update("suratMasuk", record.id, payload); else DB.insert("suratMasuk", { ...payload, petugasId: currentTendikId() }); showToast("Surat masuk berhasil disimpan.", "success"); renderSuratMasuk(); } }); };
+window.editSuratMasuk = (id) => { const record = DB.findById("suratMasuk", id); if (record) openSuratMasukForm(record); };
+window.deleteSuratMasuk = (id) => deleteSupportRecord("suratMasuk", id, "Hapus Surat Masuk?", "Data surat masuk dan keterkaitannya akan dihapus.", renderSuratMasuk);
+
+function renderSuratKeluar() {
+  const content = document.getElementById("pageContent");
+  const records = [...DB.get("suratKeluar")].sort((a, b) => b.tanggal.localeCompare(a.tanggal));
+  const rows = records.map((s) => `<tr><td>${escapeHtml(s.nomorSurat)}</td><td>${escapeHtml(s.tujuan)}</td><td>${escapeHtml(s.perihal)}</td><td>${formatDate(s.tanggal)}</td><td>${supportBadge(s.status)}</td><td><div class="row-actions"><button class="action-btn" onclick="editSuratKeluar('${s.id}')" title="Edit">✏️</button><button class="action-btn danger" onclick="deleteSuratKeluar('${s.id}')" title="Hapus">🗑️</button></div></td></tr>`).join("");
+  content.innerHTML = `<div class="toolbar"><div></div><button class="btn btn-blue" id="btnAddSuratKeluar">➕ Buat Surat Keluar</button></div>${records.length ? `<div class="table-wrap"><table><thead><tr><th>Nomor Surat</th><th>Tujuan</th><th>Perihal</th><th>Tanggal</th><th>Status</th><th>Aksi</th></tr></thead><tbody>${rows}</tbody></table></div>` : pageEmpty("📤", "Belum ada surat keluar.")}`;
+  document.getElementById("btnAddSuratKeluar").addEventListener("click", () => openSuratKeluarForm());
+}
+function suratKeluarFields() { return [
+  { key: "nomorSurat", label: "Nomor Surat", required: true }, { key: "tanggal", label: "Tanggal Surat", type: "date", required: true }, { key: "tujuan", label: "Tujuan", required: true }, { key: "perihal", label: "Perihal", type: "textarea", full: true, required: true }, { key: "status", label: "Status", type: "select", options: ["Konsep","Terkirim","Selesai"].map((x) => ({ value: x, label: x })), required: true },
+]; }
+window.openSuratKeluarForm = function(record) { openDataForm({ title: record ? "Edit Surat Keluar" : "Buat Surat Keluar", fields: suratKeluarFields(), values: record || { tanggal: todayISO(), status: "Konsep" }, submitLabel: "Simpan Surat", onSave: (payload) => { if (record) DB.update("suratKeluar", record.id, payload); else DB.insert("suratKeluar", { ...payload, petugasId: currentTendikId() }); showToast("Surat keluar berhasil disimpan.", "success"); renderSuratKeluar(); } }); };
+window.editSuratKeluar = (id) => { const record = DB.findById("suratKeluar", id); if (record) openSuratKeluarForm(record); };
+window.deleteSuratKeluar = (id) => deleteSupportRecord("suratKeluar", id, "Hapus Surat Keluar?", "Data surat keluar akan dihapus permanen.", renderSuratKeluar);
+
+function renderDisposisiSurat() {
+  const content = document.getElementById("pageContent");
+  const records = [...DB.get("disposisiSurat")].sort((a, b) => b.batasWaktu.localeCompare(a.batasWaktu));
+  const rows = records.map((d) => { const surat = DB.findById("suratMasuk", d.suratMasukId) || {}; return `<tr><td><div class="tname">${escapeHtml(surat.perihal || "Surat dihapus")}</div><div class="tsub">${escapeHtml(surat.nomorAgenda || "-")}</div></td><td>${escapeHtml(d.kepada)}</td><td>${escapeHtml(d.instruksi)}</td><td>${formatDate(d.batasWaktu)}</td><td>${supportBadge(d.status)}</td><td><div class="row-actions"><button class="action-btn" onclick="editDisposisi('${d.id}')" title="Edit">✏️</button><button class="action-btn danger" onclick="deleteDisposisi('${d.id}')" title="Hapus">🗑️</button></div></td></tr>`; }).join("");
+  content.innerHTML = `<div class="toolbar"><div></div><button class="btn btn-blue" id="btnAddDisposisi">➕ Buat Disposisi</button></div>${records.length ? `<div class="table-wrap"><table><thead><tr><th>Surat Masuk</th><th>Tujuan</th><th>Instruksi</th><th>Batas Waktu</th><th>Status</th><th>Aksi</th></tr></thead><tbody>${rows}</tbody></table></div>` : pageEmpty("🗂️", "Belum ada disposisi surat.")}`;
+  document.getElementById("btnAddDisposisi").addEventListener("click", () => openDisposisiForm());
+}
+function disposisiFields() { return [
+  { key: "suratMasukId", label: "Surat Masuk", type: "select", options: DB.get("suratMasuk").map((s) => ({ value: s.id, label: `${s.nomorAgenda} — ${s.perihal}` })), required: true }, { key: "kepada", label: "Diteruskan Kepada", required: true }, { key: "instruksi", label: "Instruksi Disposisi", type: "textarea", full: true, required: true }, { key: "batasWaktu", label: "Batas Waktu", type: "date", required: true }, { key: "status", label: "Status", type: "select", options: ["Diproses","Selesai"].map((x) => ({ value: x, label: x })), required: true },
+]; }
+window.openDisposisiForm = function(record) { openDataForm({ title: record ? "Edit Disposisi" : "Buat Disposisi", fields: disposisiFields(), values: record || { batasWaktu: todayISO(), status: "Diproses" }, submitLabel: "Simpan Disposisi", onSave: (payload) => { if (record) DB.update("disposisiSurat", record.id, payload); else DB.insert("disposisiSurat", { ...payload, petugasId: currentTendikId() }); const surat = DB.findById("suratMasuk", payload.suratMasukId); if (surat && payload.status === "Diproses") DB.update("suratMasuk", surat.id, { status: "Sudah Didisposisikan" }); showToast("Disposisi berhasil disimpan.", "success"); renderDisposisiSurat(); } }); };
+window.editDisposisi = (id) => { const record = DB.findById("disposisiSurat", id); if (record) openDisposisiForm(record); };
+window.deleteDisposisi = (id) => deleteSupportRecord("disposisiSurat", id, "Hapus Disposisi?", "Data disposisi akan dihapus permanen.", renderDisposisiSurat);
+
+function renderLaporanPersuratan() {
+  const content = document.getElementById("pageContent");
+  const masuk = DB.get("suratMasuk"); const keluar = DB.get("suratKeluar"); const disposisi = DB.get("disposisiSurat");
+  const rows = masuk.map((s) => { const d = disposisi.filter((x) => x.suratMasukId === s.id); return `<tr><td>${escapeHtml(s.nomorAgenda)}</td><td>${escapeHtml(s.perihal)}</td><td>${supportBadge(s.status)}</td><td>${d.length}</td></tr>`; }).join("");
+  content.innerHTML = `<div class="stat-grid" style="margin-bottom:16px;"><div class="stat-card"><div class="stat-info"><div class="label">Surat Masuk</div><div class="value">${masuk.length}</div></div><div class="stat-icon icon-blue">📥</div></div><div class="stat-card"><div class="stat-info"><div class="label">Surat Keluar</div><div class="value">${keluar.length}</div></div><div class="stat-icon icon-purple">📤</div></div><div class="stat-card"><div class="stat-info"><div class="label">Disposisi Diproses</div><div class="value">${disposisi.filter((d) => d.status === "Diproses").length}</div></div><div class="stat-icon icon-orange">🗂️</div></div><div class="stat-card"><div class="stat-info"><div class="label">Selesai</div><div class="value">${disposisi.filter((d) => d.status === "Selesai").length}</div></div><div class="stat-icon icon-green">✅</div></div></div><div class="table-wrap"><table><thead><tr><th>No. Agenda</th><th>Perihal</th><th>Status Surat</th><th>Jumlah Disposisi</th></tr></thead><tbody>${rows || `<tr><td colspan="4">Belum ada data persuratan.</td></tr>`}</tbody></table></div>`;
+}
+
+/* ---- SARANA & PRASARANA (TENAGA PENDIDIK) ---- */
+function renderInventaris() {
+  const content = document.getElementById("pageContent");
+  const records = [...DB.get("inventaris")].sort((a, b) => a.nama.localeCompare(b.nama));
+  const rows = records.map((i) => `<tr><td><span class="badge badge-gray">${escapeHtml(i.kode)}</span></td><td>${escapeHtml(i.nama)}</td><td>${escapeHtml(i.kategori)}</td><td>${escapeHtml(i.lokasi)}</td><td>${i.jumlah}</td><td>${supportBadge(i.kondisi)}</td><td>${escapeHtml(i.tahunPerolehan || "-")}</td><td><div class="row-actions"><button class="action-btn" onclick="editInventaris('${i.id}')" title="Edit">✏️</button><button class="action-btn danger" onclick="deleteInventaris('${i.id}')" title="Hapus">🗑️</button></div></td></tr>`).join("");
+  content.innerHTML = `<div class="toolbar"><div></div><button class="btn btn-blue" id="btnAddInventaris">➕ Tambah Inventaris</button></div>${records.length ? `<div class="table-wrap"><table><thead><tr><th>Kode</th><th>Nama Barang</th><th>Kategori</th><th>Lokasi</th><th>Jumlah</th><th>Kondisi</th><th>Tahun</th><th>Aksi</th></tr></thead><tbody>${rows}</tbody></table></div>` : pageEmpty("📦", "Belum ada data inventaris.")}`;
+  document.getElementById("btnAddInventaris").addEventListener("click", () => openInventarisForm());
+}
+function inventarisFields() { return [
+  { key: "kode", label: "Kode Inventaris", required: true }, { key: "nama", label: "Nama Barang", required: true }, { key: "kategori", label: "Kategori", type: "select", options: ["Elektronik","Mebel","Bangunan","Alat Olahraga","Alat Pembelajaran","Lainnya"].map((x) => ({ value: x, label: x })), required: true }, { key: "lokasi", label: "Lokasi/Ruang", required: true }, { key: "jumlah", label: "Jumlah", type: "number", min: 0, required: true }, { key: "kondisi", label: "Kondisi", type: "select", options: ["Baik","Perlu Perawatan","Rusak"].map((x) => ({ value: x, label: x })), required: true }, { key: "tahunPerolehan", label: "Tahun Perolehan" },
+]; }
+window.openInventarisForm = function(record) { openDataForm({ title: record ? "Edit Inventaris" : "Tambah Inventaris", fields: inventarisFields(), values: record || { jumlah: 1, kondisi: "Baik", kategori: "Elektronik" }, submitLabel: "Simpan Inventaris", onSave: (payload) => { if (record) DB.update("inventaris", record.id, payload); else DB.insert("inventaris", payload); showToast("Inventaris berhasil disimpan.", "success"); renderInventaris(); } }); };
+window.editInventaris = (id) => { const record = DB.findById("inventaris", id); if (record) openInventarisForm(record); };
+window.deleteInventaris = (id) => deleteSupportRecord("inventaris", id, "Hapus Inventaris?", "Data inventaris akan dihapus permanen.", renderInventaris);
+
+function renderPeminjamanAset() {
+  const content = document.getElementById("pageContent");
+  const records = [...DB.get("peminjamanAset")].sort((a, b) => b.tanggalPinjam.localeCompare(a.tanggalPinjam));
+  const rows = records.map((p) => { const item = DB.findById("inventaris", p.inventarisId) || {}; return `<tr><td>${escapeHtml(item.nama || "Aset dihapus")}</td><td>${escapeHtml(p.peminjam)}</td><td>${formatDate(p.tanggalPinjam)}</td><td>${p.tanggalKembali ? formatDate(p.tanggalKembali) : "-"}</td><td>${escapeHtml(p.keperluan)}</td><td>${supportBadge(p.status)}</td><td><div class="row-actions">${p.status === "Dipinjam" ? `<button class="action-btn" onclick="returnAset('${p.id}')" title="Kembalikan">↩️</button>` : ""}<button class="action-btn" onclick="editPeminjamanAset('${p.id}')" title="Edit">✏️</button><button class="action-btn danger" onclick="deletePeminjamanAset('${p.id}')" title="Hapus">🗑️</button></div></td></tr>`; }).join("");
+  content.innerHTML = `<div class="toolbar"><div></div><button class="btn btn-blue" id="btnAddPeminjamanAset">➕ Catat Peminjaman</button></div>${records.length ? `<div class="table-wrap"><table><thead><tr><th>Aset</th><th>Peminjam</th><th>Tgl Pinjam</th><th>Tgl Kembali</th><th>Keperluan</th><th>Status</th><th>Aksi</th></tr></thead><tbody>${rows}</tbody></table></div>` : pageEmpty("🔑", "Belum ada peminjaman aset.")}`;
+  document.getElementById("btnAddPeminjamanAset").addEventListener("click", () => openPeminjamanAsetForm());
+}
+function peminjamanAsetFields() { return [
+  { key: "inventarisId", label: "Aset/Barang", type: "select", options: DB.get("inventaris").map((i) => ({ value: i.id, label: `${i.kode} — ${i.nama}` })), required: true }, { key: "peminjam", label: "Nama Peminjam", required: true }, { key: "tanggalPinjam", label: "Tanggal Pinjam", type: "date", required: true }, { key: "tanggalKembali", label: "Rencana Tanggal Kembali", type: "date" }, { key: "keperluan", label: "Keperluan", type: "textarea", full: true, required: true }, { key: "status", label: "Status", type: "select", options: ["Dipinjam","Dikembalikan"].map((x) => ({ value: x, label: x })), required: true },
+]; }
+window.openPeminjamanAsetForm = function(record) { openDataForm({ title: record ? "Edit Peminjaman Aset" : "Catat Peminjaman Aset", fields: peminjamanAsetFields(), values: record || { tanggalPinjam: todayISO(), status: "Dipinjam" }, submitLabel: "Simpan Peminjaman", onSave: (payload) => { if (record) DB.update("peminjamanAset", record.id, payload); else DB.insert("peminjamanAset", { ...payload, petugasId: currentTendikId() }); showToast("Peminjaman aset berhasil disimpan.", "success"); renderPeminjamanAset(); } }); };
+window.editPeminjamanAset = (id) => { const record = DB.findById("peminjamanAset", id); if (record) openPeminjamanAsetForm(record); };
+window.returnAset = (id) => { DB.update("peminjamanAset", id, { status: "Dikembalikan", tanggalKembali: todayISO() }); showToast("Aset ditandai telah dikembalikan.", "success"); renderPeminjamanAset(); };
+window.deletePeminjamanAset = (id) => deleteSupportRecord("peminjamanAset", id, "Hapus Peminjaman?", "Data peminjaman aset akan dihapus.", renderPeminjamanAset);
+
+function renderPemeliharaanAset() {
+  const content = document.getElementById("pageContent");
+  const records = [...DB.get("pemeliharaanAset")].sort((a, b) => b.tanggal.localeCompare(a.tanggal));
+  const rows = records.map((m) => { const item = DB.findById("inventaris", m.inventarisId) || {}; return `<tr><td>${formatDate(m.tanggal)}</td><td>${escapeHtml(item.nama || "Aset dihapus")}</td><td>${escapeHtml(m.tindakan)}</td><td>Rp ${Number(m.biaya || 0).toLocaleString("id-ID")}</td><td>${supportBadge(m.status)}</td><td><div class="row-actions"><button class="action-btn" onclick="editPemeliharaan('${m.id}')" title="Edit">✏️</button><button class="action-btn danger" onclick="deletePemeliharaan('${m.id}')" title="Hapus">🗑️</button></div></td></tr>`; }).join("");
+  content.innerHTML = `<div class="toolbar"><div></div><button class="btn btn-blue" id="btnAddPemeliharaan">➕ Catat Pemeliharaan</button></div>${records.length ? `<div class="table-wrap"><table><thead><tr><th>Tanggal</th><th>Aset</th><th>Tindakan</th><th>Biaya</th><th>Status</th><th>Aksi</th></tr></thead><tbody>${rows}</tbody></table></div>` : pageEmpty("🛠️", "Belum ada catatan pemeliharaan.")}`;
+  document.getElementById("btnAddPemeliharaan").addEventListener("click", () => openPemeliharaanForm());
+}
+function pemeliharaanFields() { return [
+  { key: "inventarisId", label: "Aset/Barang", type: "select", options: DB.get("inventaris").map((i) => ({ value: i.id, label: `${i.kode} — ${i.nama}` })), required: true }, { key: "tanggal", label: "Tanggal", type: "date", required: true }, { key: "tindakan", label: "Tindakan Pemeliharaan", type: "textarea", full: true, required: true }, { key: "biaya", label: "Biaya (Rp)", type: "number", min: 0, required: true }, { key: "status", label: "Status", type: "select", options: ["Terjadwal","Diproses","Selesai"].map((x) => ({ value: x, label: x })), required: true },
+]; }
+window.openPemeliharaanForm = function(record) { openDataForm({ title: record ? "Edit Pemeliharaan" : "Catat Pemeliharaan", fields: pemeliharaanFields(), values: record || { tanggal: todayISO(), biaya: 0, status: "Terjadwal" }, submitLabel: "Simpan Pemeliharaan", onSave: (payload) => { if (record) DB.update("pemeliharaanAset", record.id, payload); else DB.insert("pemeliharaanAset", { ...payload, petugasId: currentTendikId() }); showToast("Catatan pemeliharaan berhasil disimpan.", "success"); renderPemeliharaanAset(); } }); };
+window.editPemeliharaan = (id) => { const record = DB.findById("pemeliharaanAset", id); if (record) openPemeliharaanForm(record); };
+window.deletePemeliharaan = (id) => deleteSupportRecord("pemeliharaanAset", id, "Hapus Catatan?", "Catatan pemeliharaan akan dihapus.", renderPemeliharaanAset);
+
+function renderLaporanSarpras() {
+  const content = document.getElementById("pageContent");
+  const inv = DB.get("inventaris"); const loans = DB.get("peminjamanAset"); const maintenance = DB.get("pemeliharaanAset");
+  const rows = inv.map((item) => `<tr><td>${escapeHtml(item.nama)}</td><td>${escapeHtml(item.lokasi)}</td><td>${item.jumlah}</td><td>${supportBadge(item.kondisi)}</td><td>${maintenance.filter((m) => m.inventarisId === item.id).length}</td></tr>`).join("");
+  content.innerHTML = `<div class="stat-grid" style="margin-bottom:16px;"><div class="stat-card"><div class="stat-info"><div class="label">Jenis Inventaris</div><div class="value">${inv.length}</div></div><div class="stat-icon icon-blue">📦</div></div><div class="stat-card"><div class="stat-info"><div class="label">Aset Dipinjam</div><div class="value">${loans.filter((p) => p.status === "Dipinjam").length}</div></div><div class="stat-icon icon-purple">🔑</div></div><div class="stat-card"><div class="stat-info"><div class="label">Perlu Perawatan</div><div class="value">${inv.filter((i) => i.kondisi === "Perlu Perawatan" || i.kondisi === "Rusak").length}</div></div><div class="stat-icon icon-orange">🛠️</div></div><div class="stat-card"><div class="stat-info"><div class="label">Pemeliharaan Aktif</div><div class="value">${maintenance.filter((m) => m.status !== "Selesai").length}</div></div><div class="stat-icon icon-red">⚠️</div></div></div><div class="table-wrap"><table><thead><tr><th>Inventaris</th><th>Lokasi</th><th>Jumlah</th><th>Kondisi</th><th>Riwayat Perawatan</th></tr></thead><tbody>${rows || `<tr><td colspan="5">Belum ada data inventaris.</td></tr>`}</tbody></table></div>`;
+}
+
+/* ---- KEPALA SEKOLAH (MONITORING BACA SAJA) ---- */
+function renderKepsekDashboard() {
+  const content = document.getElementById("pageContent");
+  const settings = DB.get("settings"); const siswa = activeSiswa(); const guru = DB.get("guru").filter((g) => g.status === "Aktif"); const todayAbs = DB.get("absensi").filter((a) => a.tanggal === todayISO()); const hadir = todayAbs.filter((a) => a.status === "Hadir").length; const presentRate = todayAbs.length ? Math.round((hadir / todayAbs.length) * 100) : 0; const nilai = DB.get("nilai"); const average = nilai.length ? Math.round(nilai.reduce((total, n) => total + Number(n.nilai), 0) / nilai.length) : 0;
+  const kepsek = DB.findById("kepsek", session.role === "kepsek" ? session.linkedId : "ks1") || { nama: settings.kepsek };
+  content.innerHTML = `<div class="card" style="margin-bottom:16px;"><div class="flex gap-12" style="align-items:center;"><div class="stat-icon icon-blue">👔</div><div><div class="text-muted" style="font-size:12px;">Monitoring Kepala Sekolah</div><h3 style="margin:3px 0;">${escapeHtml(kepsek.nama || settings.kepsek)}</h3><div class="text-muted" style="font-size:13px;">Tahun Ajaran ${escapeHtml(settings.tahunAjaran)} • Semester ${escapeHtml(settings.semester)}</div></div></div></div><div class="stat-grid"><div class="stat-card"><div class="stat-info"><div class="label">Siswa Aktif</div><div class="value">${siswa.length}</div></div><div class="stat-icon icon-blue">🧑‍🎓</div></div><div class="stat-card"><div class="stat-info"><div class="label">Guru Aktif</div><div class="value">${guru.length}</div></div><div class="stat-icon icon-purple">🧑‍🏫</div></div><div class="stat-card"><div class="stat-info"><div class="label">Kehadiran Hari Ini</div><div class="value">${presentRate}%</div><div class="delta">${hadir} siswa hadir</div></div><div class="stat-icon icon-green">✅</div></div><div class="stat-card"><div class="stat-info"><div class="label">Rata-rata Nilai</div><div class="value">${average}</div></div><div class="stat-icon icon-orange">🎓</div></div></div><div class="grid-2"><div class="card"><div class="card-head"><div><h3>Status Operasional</h3><p>Ringkasan modul pendukung</p></div></div><div class="activity-item"><div class="activity-dot icon-blue">✉️</div><div><div class="activity-text"><b>${DB.get("suratMasuk").filter((s) => s.status !== "Selesai").length}</b> surat masuk perlu perhatian</div></div></div><div class="activity-item"><div class="activity-dot icon-orange">🛠️</div><div><div class="activity-text"><b>${DB.get("inventaris").filter((i) => i.kondisi !== "Baik").length}</b> aset perlu perawatan</div></div></div></div><div class="card"><div class="card-head"><div><h3>Akses Monitoring</h3><p>Gunakan submenu Kepala Sekolah untuk rincian</p></div></div><div class="flex gap-8" style="flex-wrap:wrap;"><a class="btn btn-outline btn-sm" href="#kepsek-akademik">Akademik →</a><a class="btn btn-outline btn-sm" href="#kepsek-kehadiran">Kehadiran →</a><a class="btn btn-outline btn-sm" href="#kepsek-sarpras">Sarpras →</a></div></div></div>`;
+}
+function renderKepsekAkademik() {
+  const content = document.getElementById("pageContent");
+  const allNilai = DB.get("nilai"); const mapel = DB.get("mapel"); const journals = DB.get("jurnalMengajar"); const rows = mapel.map((m) => { const values = allNilai.filter((n) => n.mapelId === m.id); const avg = values.length ? Math.round(values.reduce((total, n) => total + Number(n.nilai), 0) / values.length) : 0; const below = values.filter((n) => Number(n.nilai) < m.kkm).length; return `<tr><td>${escapeHtml(m.nama)}</td><td>${m.kkm}</td><td>${values.length}</td><td>${avg || "-"}</td><td>${below ? supportBadge(`${below} di bawah KKM`) : supportBadge("Tuntas")}</td></tr>`; }).join("");
+  content.innerHTML = `<div class="stat-grid" style="margin-bottom:16px;"><div class="stat-card"><div class="stat-info"><div class="label">Nilai Tercatat</div><div class="value">${allNilai.length}</div></div><div class="stat-icon icon-blue">📝</div></div><div class="stat-card"><div class="stat-info"><div class="label">Jurnal Mengajar</div><div class="value">${journals.length}</div></div><div class="stat-icon icon-purple">📚</div></div><div class="stat-card"><div class="stat-info"><div class="label">Mapel Aktif</div><div class="value">${mapel.length}</div></div><div class="stat-icon icon-green">🎓</div></div></div><div class="table-wrap"><table><thead><tr><th>Mata Pelajaran</th><th>KKM</th><th>Nilai Tercatat</th><th>Rata-rata</th><th>Evaluasi</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+}
+function renderKepsekKehadiran() {
+  const content = document.getElementById("pageContent");
+  const date = todayISO(); const classes = DB.get("kelas"); const records = DB.get("absensi").filter((a) => a.tanggal === date);
+  const rows = classes.map((k) => { const studentIds = activeSiswa().filter((s) => s.kelas === k.nama).map((s) => s.id); const data = records.filter((a) => studentIds.includes(a.siswaId)); const hadir = data.filter((a) => a.status === "Hadir").length; const rate = data.length ? Math.round((hadir / data.length) * 100) : 0; return `<tr><td>${escapeHtml(k.nama)}</td><td>${studentIds.length}</td><td>${hadir}</td><td>${data.filter((a) => a.status === "Sakit").length + data.filter((a) => a.status === "Izin").length}</td><td>${data.filter((a) => a.status === "Alpa").length}</td><td>${supportBadge(`${rate}%`)}</td></tr>`; }).join("");
+  content.innerHTML = `<div class="card" style="margin-bottom:16px;"><span class="text-muted" style="font-size:13px;">Rekap kehadiran siswa pada ${formatDate(date)}. Gunakan menu Absensi untuk data rinci.</span></div><div class="table-wrap"><table><thead><tr><th>Kelas</th><th>Siswa Aktif</th><th>Hadir</th><th>Sakit/Izin</th><th>Alpa</th><th>Persentase Hadir</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+}
+function renderKepsekSarpras() {
+  const content = document.getElementById("pageContent");
+  const inv = DB.get("inventaris"); const maintenance = DB.get("pemeliharaanAset"); const loans = DB.get("peminjamanAset"); const rows = inv.map((i) => `<tr><td>${escapeHtml(i.kode)}</td><td>${escapeHtml(i.nama)}</td><td>${escapeHtml(i.lokasi)}</td><td>${i.jumlah}</td><td>${supportBadge(i.kondisi)}</td><td>${maintenance.filter((m) => m.inventarisId === i.id && m.status !== "Selesai").length}</td></tr>`).join("");
+  content.innerHTML = `<div class="stat-grid" style="margin-bottom:16px;"><div class="stat-card"><div class="stat-info"><div class="label">Inventaris</div><div class="value">${inv.length}</div></div><div class="stat-icon icon-blue">📦</div></div><div class="stat-card"><div class="stat-info"><div class="label">Aset Dipinjam</div><div class="value">${loans.filter((l) => l.status === "Dipinjam").length}</div></div><div class="stat-icon icon-purple">🔑</div></div><div class="stat-card"><div class="stat-info"><div class="label">Perlu Perawatan</div><div class="value">${inv.filter((i) => i.kondisi !== "Baik").length}</div></div><div class="stat-icon icon-orange">🛠️</div></div></div><div class="table-wrap"><table><thead><tr><th>Kode</th><th>Inventaris</th><th>Lokasi</th><th>Jumlah</th><th>Kondisi</th><th>Perawatan Aktif</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+}
+function renderKepsekLaporan() {
+  const content = document.getElementById("pageContent");
+  const settings = DB.get("settings");
+  const summaries = [
+    ["Akademik", "🎓", `${DB.get("nilai").length + DB.get("nilaiMapel").length} nilai tercatat dan ${DB.get("jurnalMengajar").length} jurnal mengajar`],
+    ["Kehadiran", "✅", `${DB.get("absensi").length} absensi harian dan ${DB.get("absensiMapel").length} absensi mapel`],
+    ["Perpustakaan", "📚", `${DB.get("buku").length} judul buku dengan ${DB.get("peminjamanBuku").filter((p) => p.status === "Dipinjam").length} pinjaman aktif`],
+    ["Persuratan", "✉️", `${DB.get("suratMasuk").length} surat masuk dan ${DB.get("suratKeluar").length} surat keluar`],
+    ["Sarpras", "🏗️", `${DB.get("inventaris").length} jenis inventaris dan ${DB.get("pemeliharaanAset").filter((m) => m.status !== "Selesai").length} pemeliharaan aktif`],
+  ].map(([name, icon, desc]) => `<div class="activity-item"><div class="activity-dot icon-blue">${icon}</div><div><div class="activity-text"><b>${name}</b></div><div class="activity-time">${desc}</div></div></div>`).join("");
+  content.innerHTML = `<div class="card"><div class="card-head"><div><h3>Ringkasan Laporan Sekolah</h3><p>Tahun Ajaran ${escapeHtml(settings.tahunAjaran)} • Semester ${escapeHtml(settings.semester)}</p></div></div>${summaries}<div class="text-muted" style="font-size:12.5px; margin-top:16px;">Data monitoring bersifat baca saja untuk akun Kepala Sekolah dan diperbarui mengikuti transaksi dari setiap modul.</div></div>`;
 }
 
 /* ---- DATA SISWA ---- */
@@ -2559,7 +2766,26 @@ function renderProfil() {
       </div>`;
   }
 
-  content.innerHTML = session.role === "guru" ? renderGuruProfile() : renderSiswaProfile();
+  function renderStaffProfile(collection, label) {
+    const person = DB.findById(collection, session.linkedId);
+    if (!person) return `<div class="card"><div class="empty-state">Data profil tidak ditemukan.</div></div>`;
+    return `
+      <div class="grid-2">
+        <div class="card">
+          <div class="flex gap-12" style="align-items:center; margin-bottom:20px;"><div class="avatar" style="width:64px;height:64px;font-size:20px;">${initials(person.nama)}</div><div><div style="font-weight:800; font-size:18px;">${escapeHtml(person.nama)}</div><div class="text-muted" style="font-size:13px;">${escapeHtml(label)}</div></div></div>
+          <table style="width:100%; font-size:13.5px;">
+            <tr><td class="text-muted" style="padding:8px 0; width:38%;">NIP</td><td>${escapeHtml(person.nip || "-")}</td></tr>
+            <tr><td class="text-muted" style="padding:8px 0;">No. Telepon</td><td>${escapeHtml(person.telepon || "-")}</td></tr>
+            <tr><td class="text-muted" style="padding:8px 0;">Email</td><td>${escapeHtml(person.email || "-")}</td></tr>
+            <tr><td class="text-muted" style="padding:8px 0;">Alamat</td><td>${escapeHtml(person.alamat || "-")}</td></tr>
+            <tr><td class="text-muted" style="padding:8px 0;">Status</td><td><span class="badge badge-green">${escapeHtml(person.status || "Aktif")}</span></td></tr>
+          </table>
+        </div>
+        <div class="card"><div class="card-head"><div><h3>Ganti Kata Sandi</h3><p>Perbarui kata sandi login Anda</p></div></div><form id="passForm"><div class="field"><label>Kata Sandi Baru</label><input type="password" id="newPass" minlength="4" required /></div><div class="field"><label>Konfirmasi Kata Sandi</label><input type="password" id="confPass" minlength="4" required /></div><button type="submit" class="btn btn-blue" style="width:100%;">🔒 Perbarui Kata Sandi</button></form></div>
+      </div>`;
+  }
+
+  content.innerHTML = session.role === "guru" ? renderGuruProfile() : session.role === "tendik" ? renderStaffProfile("tendik", "Tenaga Pendidik") : session.role === "kepsek" ? renderStaffProfile("kepsek", "Kepala Sekolah") : renderSiswaProfile();
 
   const passForm = document.getElementById("passForm");
   if (passForm) {
@@ -2622,16 +2848,21 @@ function renderPengaturan() {
 
   document.getElementById("settingsForm").addEventListener("submit", (e) => {
     e.preventDefault();
+    const namaKepsek = document.getElementById("fKepsek").value.trim();
     DB.updateSettings({
       namaSekolah: document.getElementById("fNamaSekolah").value.trim(),
       npsn: document.getElementById("fNpsn").value.trim(),
       telepon: document.getElementById("fTelepon").value.trim(),
       alamat: document.getElementById("fAlamat").value.trim(),
       email: document.getElementById("fEmail").value.trim(),
-      kepsek: document.getElementById("fKepsek").value.trim(),
+      kepsek: namaKepsek,
       tahunAjaran: document.getElementById("fTahunAjaran").value.trim(),
       semester: document.getElementById("fSemester").value,
     });
+    const dataKepsek = DB.findById("kepsek", "ks1");
+    if (dataKepsek) DB.update("kepsek", "ks1", { nama: namaKepsek });
+    const akunKepsek = DB.get("users").find((user) => user.role === "kepsek");
+    if (akunKepsek) DB.update("users", akunKepsek.id, { name: namaKepsek });
     showToast("Profil sekolah berhasil diperbarui.", "success");
     document.getElementById("sbSchoolName").textContent = DB.get("settings").namaSekolah;
     renderPengaturan();
@@ -2658,6 +2889,7 @@ function renderPengaturan() {
       try {
         const data = JSON.parse(ev.target.result);
         DB.save(data);
+        DB.load(); // lengkapi koleksi baru bila file cadangan berasal dari versi sebelumnya
         showToast("Data berhasil diimpor. Memuat ulang tampilan...", "success");
         setTimeout(() => { showAppScreen(); }, 800);
       } catch (err) { showToast("File tidak valid.", "error"); }

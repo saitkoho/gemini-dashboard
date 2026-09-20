@@ -13,10 +13,12 @@ Cukup buka file `sistem-digital-smp-hulnani.html` langsung dengan browser (doubl
 | Admin  | admin    | admin123  |
 | Guru   | guru     | guru123   |
 | Siswa  | siswa    | siswa123  |
+| Tenaga Pendidik | tendik | tendik123 |
+| Kepala Sekolah | kepsek | kepsek123 |
 
 ## Fitur
 
-- **Login multi-peran**: Admin, Guru, dan Siswa (sesi disimpan di `sessionStorage`).
+- **Login multi-peran**: Admin, Guru, Tenaga Pendidik, Kepala Sekolah, dan Siswa (sesi disimpan di `sessionStorage`).
 - **Dashboard** ringkasan data sesuai peran pengguna.
 - **Menu "Administrator"** (khusus Admin) — menu induk collapsible di sidebar yang mengelompokkan submenu manajemen data:
   - **Data Siswa** — CRUD lengkap, pencarian, filter kelas, dan detail siswa.
@@ -32,12 +34,12 @@ Cukup buka file `sistem-digital-smp-hulnani.html` langsung dengan browser (doubl
   - **Absensi Siswa** — catat kehadiran siswa per kelas, tanggal, guru, dan mata pelajaran.
   - **Input Nilai** — input nilai per siswa, lengkap dengan jenis penilaian dan indikator KKM.
   - Admin dapat mengakses seluruh data; Guru hanya mengelola jurnal, absensi, dan nilai miliknya sendiri pada mapel yang diampu.
-- **Struktur modul operasional** — navigasi dan rancangan halaman dasar (tahap awal, siap dikoreksi sebelum fitur CRUD diaktifkan):
-  - **Wali Kelas** (Admin/Guru): Ringkasan Kelas, Siswa Binaan, Absensi & Rekap, Catatan Wali Kelas.
-  - **Perpustakaan** (Admin): Koleksi Buku, Peminjaman & Pengembalian, Anggota Perpustakaan, Laporan Perpustakaan.
-  - **TU & Persuratan Digital** (Admin): Surat Masuk, Surat Keluar, Disposisi & Arsip Digital, Laporan Persuratan.
-  - **Sarana & Prasarana** (Admin): Inventaris Barang, Peminjaman Aset, Kondisi & Pemeliharaan, Laporan Sarpras.
-  - **Kepala Sekolah** (Admin): Dashboard Monitoring, Monitoring Akademik, Monitoring Kehadiran, Monitoring Sarpras, Laporan Sekolah.
+- **Wali Kelas** (Admin/Guru) — Ringkasan Kelas, Siswa Binaan, Absensi & Rekap, serta Catatan Wali Kelas. Guru hanya melihat kelas yang diwalikan; Admin dapat memantau seluruh kelas.
+- **Perpustakaan** (Admin/Guru) — Koleksi Buku (CRUD), Peminjaman & Pengembalian, Anggota dari data Siswa/Guru, serta laporan sirkulasi. Guru bertugas sebagai petugas perpustakaan.
+- **TU & Persuratan Digital** (Admin/Tenaga Pendidik) — Surat Masuk, Surat Keluar, Disposisi & Arsip Digital, serta laporan persuratan. Tenaga Pendidik bertugas mengelola operasional persuratan.
+- **Sarana & Prasarana** (Admin/Tenaga Pendidik) — Inventaris Barang, Peminjaman Aset, Kondisi & Pemeliharaan, serta laporan Sarpras. Tenaga Pendidik bertugas mengelola operasional Sarpras.
+- **Kepala Sekolah** (Admin/Kepala Sekolah) — Dashboard monitoring, akademik, kehadiran, Sarpras, dan laporan sekolah dalam mode baca saja.
+- **Data Kepala Sekolah** — akun Kepala Sekolah menggunakan data contoh yang konsisten dengan nama Kepala Sekolah pada Pengaturan sekolah.
 - **Profil Saya** — Guru/Siswa dapat melihat data pribadi & ganti kata sandi.
 
 > Catatan: menu **Guru Mata Pelajaran** tersedia untuk Admin dan Guru. Halaman khusus ini terpisah dari menu umum **Absensi** dan **Nilai Akademik** yang sudah ada. Untuk peran **Guru** dan **Siswa**, menu **Data Siswa** dan **Pengumuman** tetap tampil langsung di sidebar (tidak dikelompokkan), karena bukan bagian dari menu Administrator.
