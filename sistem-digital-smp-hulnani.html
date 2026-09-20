@@ -993,15 +993,52 @@ const NAV_ITEMS = [
   { key: "kelas", icon: "🏫", label: "Data Kelas", roles: ["admin"], adminGroup: true },
   { key: "nilai", icon: "📝", label: "Nilai Akademik", roles: ["admin", "guru", "siswa"] },
   { key: "absensi", icon: "🗓️", label: "Absensi", roles: ["admin", "guru", "siswa"] },
+
   { key: "jurnal-mengajar", icon: "📚", label: "Jurnal Mengajar", roles: ["admin", "guru"], guruMapelGroup: true },
   { key: "absensi-siswa", icon: "✅", label: "Absensi Siswa", roles: ["admin", "guru"], guruMapelGroup: true },
   { key: "input-nilai", icon: "✍️", label: "Input Nilai", roles: ["admin", "guru"], guruMapelGroup: true },
+
+  { key: "wali-ringkasan", icon: "🏫", label: "Ringkasan Kelas", roles: ["admin", "guru"], waliKelasGroup: true },
+  { key: "wali-siswa", icon: "🧑‍🎓", label: "Siswa Binaan", roles: ["admin", "guru"], waliKelasGroup: true },
+  { key: "wali-absensi", icon: "📅", label: "Absensi & Rekap", roles: ["admin", "guru"], waliKelasGroup: true },
+  { key: "wali-catatan", icon: "📒", label: "Catatan Wali Kelas", roles: ["admin", "guru"], waliKelasGroup: true },
+
+  { key: "perpus-koleksi", icon: "📚", label: "Koleksi Buku", roles: ["admin"], perpustakaanGroup: true },
+  { key: "perpus-sirkulasi", icon: "🔄", label: "Peminjaman & Pengembalian", roles: ["admin"], perpustakaanGroup: true },
+  { key: "perpus-anggota", icon: "👥", label: "Anggota Perpustakaan", roles: ["admin"], perpustakaanGroup: true },
+  { key: "perpus-laporan", icon: "📈", label: "Laporan Perpustakaan", roles: ["admin"], perpustakaanGroup: true },
+
+  { key: "tu-surat-masuk", icon: "📥", label: "Surat Masuk", roles: ["admin"], tuGroup: true },
+  { key: "tu-surat-keluar", icon: "📤", label: "Surat Keluar", roles: ["admin"], tuGroup: true },
+  { key: "tu-disposisi", icon: "🗂️", label: "Disposisi & Arsip Digital", roles: ["admin"], tuGroup: true },
+  { key: "tu-laporan", icon: "📊", label: "Laporan Persuratan", roles: ["admin"], tuGroup: true },
+
+  { key: "sarpras-inventaris", icon: "📦", label: "Inventaris Barang", roles: ["admin"], sarprasGroup: true },
+  { key: "sarpras-peminjaman", icon: "🔑", label: "Peminjaman Aset", roles: ["admin"], sarprasGroup: true },
+  { key: "sarpras-pemeliharaan", icon: "🛠️", label: "Kondisi & Pemeliharaan", roles: ["admin"], sarprasGroup: true },
+  { key: "sarpras-laporan", icon: "📋", label: "Laporan Sarpras", roles: ["admin"], sarprasGroup: true },
+
+  { key: "kepsek-dashboard", icon: "📡", label: "Dashboard Monitoring", roles: ["admin"], kepsekGroup: true },
+  { key: "kepsek-akademik", icon: "🎓", label: "Monitoring Akademik", roles: ["admin"], kepsekGroup: true },
+  { key: "kepsek-kehadiran", icon: "✅", label: "Monitoring Kehadiran", roles: ["admin"], kepsekGroup: true },
+  { key: "kepsek-sarpras", icon: "🏢", label: "Monitoring Sarpras", roles: ["admin"], kepsekGroup: true },
+  { key: "kepsek-laporan", icon: "🗒️", label: "Laporan Sekolah", roles: ["admin"], kepsekGroup: true },
+
   { key: "pengumuman", icon: "📣", label: "Pengumuman", roles: ["admin", "guru", "siswa"], adminGroup: true },
   { key: "profil", icon: "👤", label: "Profil Saya", roles: ["guru", "siswa"] },
   { key: "pengaturan", icon: "⚙️", label: "Pengaturan", roles: ["admin"], adminGroup: true },
 ];
-/* Untuk peran Admin, menu bertanda `adminGroup: true` dikelompokkan
-   sebagai submenu di bawah menu induk "Administrator" pada sidebar. */
+
+const SIDEBAR_GROUPS = [
+  { id: "guruMapelGroup", flag: "guruMapelGroup", label: "Guru Mata Pelajaran", icon: "🧑‍🏫", roles: ["admin", "guru"] },
+  { id: "waliKelasGroup", flag: "waliKelasGroup", label: "Wali Kelas", icon: "👩‍🏫", roles: ["admin", "guru"] },
+  { id: "perpustakaanGroup", flag: "perpustakaanGroup", label: "Perpustakaan", icon: "📖", roles: ["admin"] },
+  { id: "tuGroup", flag: "tuGroup", label: "TU & Persuratan Digital", icon: "✉️", roles: ["admin"] },
+  { id: "sarprasGroup", flag: "sarprasGroup", label: "Sarana & Prasarana", icon: "🏗️", roles: ["admin"] },
+  { id: "kepsekGroup", flag: "kepsekGroup", label: "Kepala Sekolah", icon: "👔", roles: ["admin"] },
+  { id: "adminGroup", flag: "adminGroup", label: "Administrator", icon: "🛠️", roles: ["admin"] },
+];
+
 const ROLE_LABEL = { admin: "Administrator", guru: "Guru", siswa: "Siswa" };
 const PAGE_META = {
   dashboard: { title: "Dashboard", sub: "Ringkasan data sekolah hari ini" },
@@ -1014,6 +1051,33 @@ const PAGE_META = {
   "jurnal-mengajar": { title: "Jurnal Mengajar", sub: "Catat materi dan aktivitas pembelajaran setiap pertemuan" },
   "absensi-siswa": { title: "Absensi Siswa", sub: "Catat kehadiran siswa per mata pelajaran" },
   "input-nilai": { title: "Input Nilai", sub: "Input dan kelola nilai siswa pada mata pelajaran yang diampu" },
+
+  "wali-ringkasan": { title: "Ringkasan Kelas", sub: "Struktur dashboard untuk pemantauan wali kelas" },
+  "wali-siswa": { title: "Siswa Binaan", sub: "Struktur data siswa yang berada di bawah pembinaan wali kelas" },
+  "wali-absensi": { title: "Absensi & Rekap", sub: "Struktur rekap kehadiran dan tindak lanjut siswa per kelas" },
+  "wali-catatan": { title: "Catatan Wali Kelas", sub: "Struktur catatan perkembangan dan komunikasi wali kelas" },
+
+  "perpus-koleksi": { title: "Koleksi Buku", sub: "Struktur katalog dan inventaris koleksi perpustakaan" },
+  "perpus-sirkulasi": { title: "Peminjaman & Pengembalian", sub: "Struktur transaksi sirkulasi buku perpustakaan" },
+  "perpus-anggota": { title: "Anggota Perpustakaan", sub: "Struktur data anggota dan status keanggotaan perpustakaan" },
+  "perpus-laporan": { title: "Laporan Perpustakaan", sub: "Struktur laporan koleksi dan aktivitas sirkulasi" },
+
+  "tu-surat-masuk": { title: "Surat Masuk", sub: "Struktur registrasi dan tindak lanjut surat masuk" },
+  "tu-surat-keluar": { title: "Surat Keluar", sub: "Struktur pembuatan, penomoran, dan pengiriman surat keluar" },
+  "tu-disposisi": { title: "Disposisi & Arsip Digital", sub: "Struktur alur disposisi serta penyimpanan arsip digital" },
+  "tu-laporan": { title: "Laporan Persuratan", sub: "Struktur rekap surat masuk, keluar, dan disposisi" },
+
+  "sarpras-inventaris": { title: "Inventaris Barang", sub: "Struktur pendataan aset dan inventaris sekolah" },
+  "sarpras-peminjaman": { title: "Peminjaman Aset", sub: "Struktur pencatatan peminjaman barang dan ruang" },
+  "sarpras-pemeliharaan": { title: "Kondisi & Pemeliharaan", sub: "Struktur pemantauan kondisi dan perawatan aset" },
+  "sarpras-laporan": { title: "Laporan Sarpras", sub: "Struktur rekap inventaris, kondisi, dan pemeliharaan" },
+
+  "kepsek-dashboard": { title: "Dashboard Monitoring", sub: "Ringkasan indikator sekolah untuk Kepala Sekolah" },
+  "kepsek-akademik": { title: "Monitoring Akademik", sub: "Struktur pemantauan nilai dan aktivitas pembelajaran" },
+  "kepsek-kehadiran": { title: "Monitoring Kehadiran", sub: "Struktur pemantauan kehadiran siswa dan guru" },
+  "kepsek-sarpras": { title: "Monitoring Sarpras", sub: "Struktur pemantauan aset dan kebutuhan sarana prasarana" },
+  "kepsek-laporan": { title: "Laporan Sekolah", sub: "Struktur laporan ringkas untuk pengambilan keputusan" },
+
   pengumuman: { title: "Pengumuman", sub: "Info dan pengumuman terbaru dari sekolah" },
   profil: { title: "Profil Saya", sub: "Informasi akun dan data pribadi Anda" },
   pengaturan: { title: "Pengaturan", sub: "Kelola profil sekolah dan konfigurasi sistem" },
@@ -1053,22 +1117,18 @@ function buildSidebarNav() {
   const nav = document.getElementById("sidebarNav");
   const items = NAV_ITEMS.filter((item) => item.roles.includes(session.role));
   const currentKey = (window.location.hash || "#dashboard").replace("#", "");
-  // Menu Administrator hanya dikelompokkan saat role Admin; untuk Guru/Siswa
-  // item yang sama tetap tampil langsung seperti struktur sidebar sebelumnya.
-  const regularItems = items.filter((item) => !item.guruMapelGroup && (session.role !== "admin" || !item.adminGroup));
-  const guruMapelItems = items.filter((item) => item.guruMapelGroup);
-  const adminItems = session.role === "admin" ? items.filter((item) => item.adminGroup) : [];
+  const visibleGroups = SIDEBAR_GROUPS.filter((group) => group.roles.includes(session.role));
+  // Item grup yang tidak berlaku untuk peran saat ini tetap tampil datar;
+  // contohnya Data Siswa dan Pengumuman bagi Guru/Siswa.
+  const regularItems = items.filter((item) => !visibleGroups.some((group) => item[group.flag]));
 
   let navHtml = `<div class="sidebar-section-title">Menu Utama</div>` + regularItems.map(linkHtml).join("");
-  if (guruMapelItems.length) {
-    navHtml += sidebarGroupHtml({ id: "guruMapelGroup", label: "Guru Mata Pelajaran", icon: "🧑‍🏫", items: guruMapelItems, currentKey });
-  }
-  if (session.role === "admin" && adminItems.length) {
-    navHtml += sidebarGroupHtml({ id: "adminGroup", label: "Administrator", icon: "🛠️", items: adminItems, currentKey });
-  }
+  visibleGroups.forEach((group) => {
+    const groupItems = items.filter((item) => item[group.flag]);
+    if (groupItems.length) navHtml += sidebarGroupHtml({ ...group, items: groupItems, currentKey });
+  });
   nav.innerHTML = navHtml;
-  bindSidebarGroup("guruMapelGroup");
-  bindSidebarGroup("adminGroup");
+  visibleGroups.forEach((group) => bindSidebarGroup(group.id));
 }
 
 function setActiveNav(key) {
@@ -1076,13 +1136,11 @@ function setActiveNav(key) {
     a.classList.toggle("active", a.dataset.key === key);
   });
   const navItem = NAV_ITEMS.find((n) => n.key === key);
-  [
-    { id: "adminGroup", active: !!(navItem && navItem.adminGroup) },
-    { id: "guruMapelGroup", active: !!(navItem && navItem.guruMapelGroup) },
-  ].forEach(({ id, active }) => {
-    const toggle = document.getElementById(`${id}Toggle`);
-    const items = document.getElementById(`${id}Items`);
+  SIDEBAR_GROUPS.filter((group) => group.roles.includes(session.role)).forEach((group) => {
+    const toggle = document.getElementById(`${group.id}Toggle`);
+    const items = document.getElementById(`${group.id}Items`);
     if (!toggle || !items) return;
+    const active = !!(navItem && navItem[group.flag]);
     toggle.classList.toggle("has-active", active);
     if (active) {
       toggle.classList.add("open");
@@ -1123,6 +1181,27 @@ const ROUTES = {
   "jurnal-mengajar": renderJurnalMengajar,
   "absensi-siswa": renderAbsensiSiswaMapel,
   "input-nilai": renderInputNilaiMapel,
+  "wali-ringkasan": () => renderStructureModule("wali-ringkasan"),
+  "wali-siswa": () => renderStructureModule("wali-siswa"),
+  "wali-absensi": () => renderStructureModule("wali-absensi"),
+  "wali-catatan": () => renderStructureModule("wali-catatan"),
+  "perpus-koleksi": () => renderStructureModule("perpus-koleksi"),
+  "perpus-sirkulasi": () => renderStructureModule("perpus-sirkulasi"),
+  "perpus-anggota": () => renderStructureModule("perpus-anggota"),
+  "perpus-laporan": () => renderStructureModule("perpus-laporan"),
+  "tu-surat-masuk": () => renderStructureModule("tu-surat-masuk"),
+  "tu-surat-keluar": () => renderStructureModule("tu-surat-keluar"),
+  "tu-disposisi": () => renderStructureModule("tu-disposisi"),
+  "tu-laporan": () => renderStructureModule("tu-laporan"),
+  "sarpras-inventaris": () => renderStructureModule("sarpras-inventaris"),
+  "sarpras-peminjaman": () => renderStructureModule("sarpras-peminjaman"),
+  "sarpras-pemeliharaan": () => renderStructureModule("sarpras-pemeliharaan"),
+  "sarpras-laporan": () => renderStructureModule("sarpras-laporan"),
+  "kepsek-dashboard": () => renderStructureModule("kepsek-dashboard"),
+  "kepsek-akademik": () => renderStructureModule("kepsek-akademik"),
+  "kepsek-kehadiran": () => renderStructureModule("kepsek-kehadiran"),
+  "kepsek-sarpras": () => renderStructureModule("kepsek-sarpras"),
+  "kepsek-laporan": () => renderStructureModule("kepsek-laporan"),
   pengumuman: renderPengumuman,
   profil: renderProfil,
   pengaturan: renderPengaturan,
@@ -1266,6 +1345,198 @@ function renderDashboard() {
       </div>
     </div>
   `;
+}
+
+/* ---- STRUKTUR MODUL SEKOLAH (TAHAP RANCANGAN) ---- */
+const STRUCTURE_MODULES = {
+  "wali-ringkasan": {
+    icon: "🏫", group: "Wali Kelas", title: "Ringkasan Kelas",
+    purpose: "Dashboard awal untuk melihat kondisi kelas yang menjadi tanggung jawab wali kelas.",
+    scope: ["Identitas kelas dan wali kelas", "Jumlah siswa aktif", "Ringkasan kehadiran", "Pengumuman dan agenda kelas"],
+    data: ["Kelas dan wali kelas", "Siswa aktif per kelas", "Absensi harian", "Agenda kelas"],
+    links: [{ key: "siswa", label: "Data Siswa" }, { key: "absensi", label: "Absensi" }],
+  },
+  "wali-siswa": {
+    icon: "🧑‍🎓", group: "Wali Kelas", title: "Siswa Binaan",
+    purpose: "Ruang kerja untuk memantau profil, status, dan kebutuhan siswa dalam satu kelas.",
+    scope: ["Daftar siswa per kelas", "Profil dan kontak orang tua", "Status aktif/pindah/lulus", "Riwayat pendampingan"],
+    data: ["Data induk siswa", "Kelas penempatan", "Kontak orang tua", "Riwayat pembinaan"],
+    links: [{ key: "siswa", label: "Buka Data Siswa" }],
+  },
+  "wali-absensi": {
+    icon: "📅", group: "Wali Kelas", title: "Absensi & Rekap",
+    purpose: "Struktur pencatatan dan rekap kehadiran siswa untuk tindak lanjut wali kelas.",
+    scope: ["Absensi harian per kelas", "Rekap hadir, sakit, izin, dan alpa", "Filter tanggal/bulan", "Tindak lanjut ketidakhadiran"],
+    data: ["Siswa aktif", "Tanggal absensi", "Status kehadiran", "Catatan tindak lanjut"],
+    links: [{ key: "absensi", label: "Buka Absensi" }],
+  },
+  "wali-catatan": {
+    icon: "📒", group: "Wali Kelas", title: "Catatan Wali Kelas",
+    purpose: "Struktur catatan perkembangan, komunikasi, dan tindak lanjut bagi setiap siswa.",
+    scope: ["Catatan per siswa", "Kategori akademik, sikap, atau kedisiplinan", "Tanggal dan tindak lanjut", "Riwayat komunikasi orang tua"],
+    data: ["Siswa", "Kategori catatan", "Isi catatan", "Tanggal dan status tindak lanjut"],
+    links: [{ key: "wali-siswa", label: "Siswa Binaan" }],
+  },
+
+  "perpus-koleksi": {
+    icon: "📚", group: "Perpustakaan", title: "Koleksi Buku",
+    purpose: "Struktur katalog buku dan inventaris koleksi perpustakaan sekolah.",
+    scope: ["Kode/ISBN buku", "Judul, penulis, penerbit, tahun", "Kategori dan lokasi rak", "Stok dan kondisi buku"],
+    data: ["Identitas buku", "Kategori", "Lokasi rak", "Jumlah eksemplar dan kondisi"],
+    links: [{ key: "perpus-sirkulasi", label: "Peminjaman & Pengembalian" }],
+  },
+  "perpus-sirkulasi": {
+    icon: "🔄", group: "Perpustakaan", title: "Peminjaman & Pengembalian",
+    purpose: "Struktur transaksi peminjaman, pengembalian, keterlambatan, dan denda buku.",
+    scope: ["Peminjam dan buku", "Tanggal pinjam dan jatuh tempo", "Tanggal kembali", "Status denda/keterlambatan"],
+    data: ["Anggota", "Buku", "Tanggal transaksi", "Status pengembalian dan denda"],
+    links: [{ key: "perpus-koleksi", label: "Koleksi Buku" }, { key: "perpus-anggota", label: "Anggota Perpustakaan" }],
+  },
+  "perpus-anggota": {
+    icon: "👥", group: "Perpustakaan", title: "Anggota Perpustakaan",
+    purpose: "Struktur anggota perpustakaan yang terhubung dengan siswa, guru, dan tenaga kependidikan.",
+    scope: ["Nomor anggota", "Identitas anggota", "Jenis anggota", "Status keanggotaan dan riwayat pinjam"],
+    data: ["Siswa, guru, dan tendik", "Nomor anggota", "Tanggal aktif", "Status anggota"],
+    links: [{ key: "siswa", label: "Data Siswa" }, { key: "guru", label: "Data Guru" }],
+  },
+  "perpus-laporan": {
+    icon: "📈", group: "Perpustakaan", title: "Laporan Perpustakaan",
+    purpose: "Struktur laporan ringkas koleksi, peminjaman, keterlambatan, dan anggota aktif.",
+    scope: ["Rekap koleksi", "Buku terpinjam", "Keterlambatan dan denda", "Statistik anggota"],
+    data: ["Koleksi buku", "Transaksi sirkulasi", "Anggota"],
+    links: [{ key: "perpus-koleksi", label: "Koleksi Buku" }, { key: "perpus-sirkulasi", label: "Transaksi Sirkulasi" }],
+  },
+
+  "tu-surat-masuk": {
+    icon: "📥", group: "TU & Persuratan Digital", title: "Surat Masuk",
+    purpose: "Struktur registrasi surat masuk agar dokumen mudah ditelusuri dan ditindaklanjuti.",
+    scope: ["Nomor agenda", "Nomor dan tanggal surat", "Pengirim dan perihal", "Berkas digital serta status disposisi"],
+    data: ["Metadata surat", "Pengirim", "File arsip", "Tujuan disposisi dan status"],
+    links: [{ key: "tu-disposisi", label: "Disposisi & Arsip Digital" }],
+  },
+  "tu-surat-keluar": {
+    icon: "📤", group: "TU & Persuratan Digital", title: "Surat Keluar",
+    purpose: "Struktur pembuatan dan registrasi surat keluar dengan nomor surat yang tertib.",
+    scope: ["Nomor surat", "Tujuan dan perihal", "Tanggal surat", "Konsep, lampiran, dan status kirim"],
+    data: ["Nomor surat", "Tujuan", "Isi/ringkasan", "Lampiran dan berkas digital"],
+    links: [{ key: "tu-laporan", label: "Laporan Persuratan" }],
+  },
+  "tu-disposisi": {
+    icon: "🗂️", group: "TU & Persuratan Digital", title: "Disposisi & Arsip Digital",
+    purpose: "Struktur alur disposisi surat dan penyimpanan arsip digital yang mudah dicari.",
+    scope: ["Tujuan disposisi", "Instruksi dan batas waktu", "Status tindak lanjut", "Arsip file surat"],
+    data: ["Surat terkait", "Penerima disposisi", "Instruksi", "Status dan file arsip"],
+    links: [{ key: "tu-surat-masuk", label: "Surat Masuk" }, { key: "tu-surat-keluar", label: "Surat Keluar" }],
+  },
+  "tu-laporan": {
+    icon: "📊", group: "TU & Persuratan Digital", title: "Laporan Persuratan",
+    purpose: "Struktur rekap surat masuk, surat keluar, dan tindak lanjut disposisi.",
+    scope: ["Filter periode", "Jumlah surat masuk/keluar", "Status disposisi", "Ekspor ringkasan"],
+    data: ["Registrasi surat", "Disposisi", "Periode laporan"],
+    links: [{ key: "tu-surat-masuk", label: "Surat Masuk" }, { key: "tu-surat-keluar", label: "Surat Keluar" }],
+  },
+
+  "sarpras-inventaris": {
+    icon: "📦", group: "Sarana & Prasarana", title: "Inventaris Barang",
+    purpose: "Struktur master inventaris aset, barang habis pakai, serta lokasi penempatannya.",
+    scope: ["Kode inventaris", "Nama dan kategori barang", "Lokasi/ruang", "Jumlah, kondisi, dan nilai perolehan"],
+    data: ["Identitas aset", "Kategori", "Lokasi", "Kondisi dan jumlah"],
+    links: [{ key: "sarpras-pemeliharaan", label: "Kondisi & Pemeliharaan" }],
+  },
+  "sarpras-peminjaman": {
+    icon: "🔑", group: "Sarana & Prasarana", title: "Peminjaman Aset",
+    purpose: "Struktur pencatatan peminjaman barang, ruang, dan pengembalian aset sekolah.",
+    scope: ["Peminjam", "Barang/ruang", "Waktu pinjam dan kembali", "Persetujuan serta status pengembalian"],
+    data: ["Aset", "Peminjam", "Tanggal transaksi", "Status persetujuan"],
+    links: [{ key: "sarpras-inventaris", label: "Inventaris Barang" }],
+  },
+  "sarpras-pemeliharaan": {
+    icon: "🛠️", group: "Sarana & Prasarana", title: "Kondisi & Pemeliharaan",
+    purpose: "Struktur pelaporan kerusakan, jadwal perawatan, dan riwayat pemeliharaan aset.",
+    scope: ["Kondisi baik/rusak", "Laporan kerusakan", "Jadwal pemeliharaan", "Biaya dan riwayat perbaikan"],
+    data: ["Aset", "Kondisi", "Uraian tindakan", "Tanggal dan biaya"],
+    links: [{ key: "sarpras-inventaris", label: "Inventaris Barang" }],
+  },
+  "sarpras-laporan": {
+    icon: "📋", group: "Sarana & Prasarana", title: "Laporan Sarpras",
+    purpose: "Struktur laporan inventaris, kondisi aset, peminjaman, dan kebutuhan pengadaan.",
+    scope: ["Rekap per kategori", "Kondisi aset", "Riwayat peminjaman", "Daftar kebutuhan/pengadaan"],
+    data: ["Inventaris", "Pemeliharaan", "Peminjaman aset"],
+    links: [{ key: "sarpras-inventaris", label: "Inventaris Barang" }, { key: "sarpras-pemeliharaan", label: "Pemeliharaan" }],
+  },
+
+  "kepsek-dashboard": {
+    icon: "📡", group: "Kepala Sekolah", title: "Dashboard Monitoring",
+    purpose: "Ruang monitoring indikator utama sekolah sebagai dasar pengambilan keputusan Kepala Sekolah.",
+    scope: ["Jumlah siswa, guru, dan kelas", "Kehadiran harian", "Ringkasan nilai", "Status modul dan laporan"],
+    data: ["Data siswa", "Data guru", "Absensi", "Nilai akademik"],
+    links: [{ key: "dashboard", label: "Dashboard Utama" }, { key: "kepsek-akademik", label: "Monitoring Akademik" }],
+    monitoring: true,
+  },
+  "kepsek-akademik": {
+    icon: "🎓", group: "Kepala Sekolah", title: "Monitoring Akademik",
+    purpose: "Struktur pemantauan pencapaian nilai, kegiatan mengajar, dan perkembangan akademik sekolah.",
+    scope: ["Rata-rata nilai per mapel", "Nilai di bawah KKM", "Jurnal mengajar", "Rekap kelas dan semester"],
+    data: ["Nilai Akademik", "Input Nilai", "Jurnal Mengajar", "Data mapel dan KKM"],
+    links: [{ key: "nilai", label: "Nilai Akademik" }, { key: "jurnal-mengajar", label: "Jurnal Mengajar" }],
+  },
+  "kepsek-kehadiran": {
+    icon: "✅", group: "Kepala Sekolah", title: "Monitoring Kehadiran",
+    purpose: "Struktur pemantauan kehadiran siswa per kelas dan per mata pelajaran.",
+    scope: ["Persentase hadir", "Rekap sakit, izin, dan alpa", "Filter kelas/periode", "Siswa yang perlu tindak lanjut"],
+    data: ["Absensi", "Absensi Siswa per Mapel", "Data kelas dan siswa"],
+    links: [{ key: "absensi", label: "Absensi Harian" }, { key: "absensi-siswa", label: "Absensi Siswa per Mapel" }],
+  },
+  "kepsek-sarpras": {
+    icon: "🏢", group: "Kepala Sekolah", title: "Monitoring Sarpras",
+    purpose: "Struktur pemantauan ketersediaan, kondisi, dan kebutuhan sarana prasarana.",
+    scope: ["Ringkasan inventaris", "Aset rusak/perlu perawatan", "Peminjaman aktif", "Kebutuhan pengadaan"],
+    data: ["Inventaris barang", "Pemeliharaan", "Peminjaman aset"],
+    links: [{ key: "sarpras-inventaris", label: "Inventaris Barang" }, { key: "sarpras-laporan", label: "Laporan Sarpras" }],
+  },
+  "kepsek-laporan": {
+    icon: "🗒️", group: "Kepala Sekolah", title: "Laporan Sekolah",
+    purpose: "Struktur pusat ringkasan laporan akademik, kehadiran, perpustakaan, persuratan, dan sarpras.",
+    scope: ["Pilih periode laporan", "Ringkasan tiap unit", "Status data pendukung", "Ekspor atau cetak laporan"],
+    data: ["Akademik", "Kehadiran", "Perpustakaan", "Persuratan dan sarpras"],
+    links: [{ key: "kepsek-dashboard", label: "Dashboard Monitoring" }, { key: "kepsek-akademik", label: "Monitoring Akademik" }],
+  },
+};
+
+function renderStructureModule(key) {
+  const content = document.getElementById("pageContent");
+  const module = STRUCTURE_MODULES[key];
+  if (!module) {
+    content.innerHTML = `<div class="card"><div class="empty-state"><div class="ic">🧭</div>Struktur modul tidak ditemukan.</div></div>`;
+    return;
+  }
+  const scopeItems = module.scope.map((item) => `<li style="margin-bottom:8px;">${escapeHtml(item)}</li>`).join("");
+  const dataItems = module.data.map((item) => `<li style="margin-bottom:8px;">${escapeHtml(item)}</li>`).join("");
+  const links = module.links.map((link) => `<a class="btn btn-outline btn-sm" href="#${link.key}">${escapeHtml(link.label)} →</a>`).join("");
+  const today = new Date().toISOString().slice(0, 10);
+  const monitoring = module.monitoring ? `
+    <div class="stat-grid" style="margin-bottom:16px;">
+      <div class="stat-card"><div class="stat-info"><div class="label">Siswa Aktif</div><div class="value">${DB.get("siswa").filter((s) => s.status === "Aktif").length}</div></div><div class="stat-icon icon-blue">🧑‍🎓</div></div>
+      <div class="stat-card"><div class="stat-info"><div class="label">Guru Aktif</div><div class="value">${DB.get("guru").filter((g) => g.status === "Aktif").length}</div></div><div class="stat-icon icon-purple">🧑‍🏫</div></div>
+      <div class="stat-card"><div class="stat-info"><div class="label">Kelas Aktif</div><div class="value">${DB.get("kelas").length}</div></div><div class="stat-icon icon-orange">🏫</div></div>
+      <div class="stat-card"><div class="stat-info"><div class="label">Absensi Hari Ini</div><div class="value">${DB.get("absensi").filter((a) => a.tanggal === today && a.status === "Hadir").length}</div><div class="delta">siswa hadir tercatat</div></div><div class="stat-icon icon-green">✅</div></div>
+    </div>` : "";
+
+  content.innerHTML = `
+    ${monitoring}
+    <div class="card" style="margin-bottom:16px;">
+      <div class="flex-between" style="align-items:flex-start; gap:16px;">
+        <div class="flex gap-12" style="align-items:flex-start;">
+          <div class="stat-icon icon-blue" style="width:46px; height:46px; font-size:22px; flex-shrink:0;">${module.icon}</div>
+          <div><div class="flex gap-8" style="align-items:center; margin-bottom:7px;"><span class="badge badge-blue">Struktur Awal</span><span class="text-muted" style="font-size:12px;">${escapeHtml(module.group)}</span></div><h3 style="margin:0 0 7px;">${escapeHtml(module.title)}</h3><p class="text-muted" style="margin:0; line-height:1.6; font-size:13.5px;">${escapeHtml(module.purpose)}</p></div>
+        </div>
+      </div>
+    </div>
+    <div class="grid-2">
+      <div class="card"><div class="card-head"><div><h3>Ruang Lingkup</h3><p>Susunan fitur yang disiapkan</p></div></div><ul style="margin:0; padding-left:20px; font-size:13.5px; line-height:1.45;">${scopeItems}</ul></div>
+      <div class="card"><div class="card-head"><div><h3>Data yang Dibutuhkan</h3><p>Landasan data untuk tahap implementasi</p></div></div><ul style="margin:0; padding-left:20px; font-size:13.5px; line-height:1.45;">${dataItems}</ul></div>
+    </div>
+    <div class="card" style="margin-top:16px;"><div class="card-head"><div><h3>Integrasi Sistem</h3><p>Menu terkait yang dapat menjadi sumber data awal</p></div></div><div class="flex gap-8" style="flex-wrap:wrap;">${links}</div><div class="text-muted" style="font-size:12.5px; margin-top:18px; padding-top:14px; border-top:1px solid var(--border);">Tahap ini membentuk navigasi dan rancangan halaman. Form, data contoh, hak akses petugas khusus, serta laporan operasional dapat disesuaikan setelah struktur disetujui.</div></div>`;
 }
 
 /* ---- DATA SISWA ---- */

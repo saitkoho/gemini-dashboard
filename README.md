@@ -32,6 +32,12 @@ Cukup buka file `sistem-digital-smp-hulnani.html` langsung dengan browser (doubl
   - **Absensi Siswa** — catat kehadiran siswa per kelas, tanggal, guru, dan mata pelajaran.
   - **Input Nilai** — input nilai per siswa, lengkap dengan jenis penilaian dan indikator KKM.
   - Admin dapat mengakses seluruh data; Guru hanya mengelola jurnal, absensi, dan nilai miliknya sendiri pada mapel yang diampu.
+- **Struktur modul operasional** — navigasi dan rancangan halaman dasar (tahap awal, siap dikoreksi sebelum fitur CRUD diaktifkan):
+  - **Wali Kelas** (Admin/Guru): Ringkasan Kelas, Siswa Binaan, Absensi & Rekap, Catatan Wali Kelas.
+  - **Perpustakaan** (Admin): Koleksi Buku, Peminjaman & Pengembalian, Anggota Perpustakaan, Laporan Perpustakaan.
+  - **TU & Persuratan Digital** (Admin): Surat Masuk, Surat Keluar, Disposisi & Arsip Digital, Laporan Persuratan.
+  - **Sarana & Prasarana** (Admin): Inventaris Barang, Peminjaman Aset, Kondisi & Pemeliharaan, Laporan Sarpras.
+  - **Kepala Sekolah** (Admin): Dashboard Monitoring, Monitoring Akademik, Monitoring Kehadiran, Monitoring Sarpras, Laporan Sekolah.
 - **Profil Saya** — Guru/Siswa dapat melihat data pribadi & ganti kata sandi.
 
 > Catatan: menu **Guru Mata Pelajaran** tersedia untuk Admin dan Guru. Halaman khusus ini terpisah dari menu umum **Absensi** dan **Nilai Akademik** yang sudah ada. Untuk peran **Guru** dan **Siswa**, menu **Data Siswa** dan **Pengumuman** tetap tampil langsung di sidebar (tidak dikelompokkan), karena bukan bagian dari menu Administrator.
