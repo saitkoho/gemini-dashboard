@@ -602,35 +602,6 @@ tbody tr:hover { background: #fafbff; }
   </div>
 </div>
 
-<!-- MODAL: NILAI -->
-<div class="modal-backdrop" id="nilaiModal">
-  <div class="modal">
-    <div class="modal-head">
-      <h3 id="nilaiModalTitle">Input Nilai</h3>
-      <button class="modal-close" onclick="closeModal('nilaiModal')">✕</button>
-    </div>
-    <form id="nilaiForm">
-      <div class="modal-body">
-        <input type="hidden" id="nilaiId" />
-        <div class="field"><label>Siswa</label><select id="nSiswa" required></select></div>
-        <div class="field"><label>Mata Pelajaran</label><select id="nMapel" required></select></div>
-        <div class="field">
-          <label>Jenis Penilaian</label>
-          <select id="nJenis" required>
-            <option value="Tugas">Tugas</option><option value="UH1">Ulangan Harian 1</option>
-            <option value="UH2">Ulangan Harian 2</option><option value="UTS">UTS</option><option value="UAS">UAS</option>
-          </select>
-        </div>
-        <div class="field"><label>Nilai (0-100)</label><input type="number" id="nNilai" min="0" max="100" required /></div>
-      </div>
-      <div class="modal-foot">
-        <button type="button" class="btn btn-outline" onclick="closeModal('nilaiModal')">Batal</button>
-        <button type="submit" class="btn btn-blue">💾 Simpan Nilai</button>
-      </div>
-    </form>
-  </div>
-</div>
-
 <!-- MODAL: JURNAL MENGAJAR -->
 <div class="modal-backdrop" id="jurnalModal">
   <div class="modal modal-lg">
@@ -799,18 +770,7 @@ const DB = (function () {
         { id: "s11", nis: "2024015", nama: "Gita Permata", kelas: "IX-A", jk: "P", tempatLahir: "Kupang", tglLahir: "2011-08-08", alamat: "Jl. Adisucipto No. 50", telepon: "081211112232", namaOrtu: "Bapak Wawan", status: "Aktif" },
         { id: "s12", nis: "2024016", nama: "Hafiz Ramadhan", kelas: "IX-A", jk: "L", tempatLahir: "Kupang", tglLahir: "2011-10-19", alamat: "Jl. Timor Raya No. 60", telepon: "081211112233", namaOrtu: "Ibu Yuli", status: "Aktif" },
       ],
-      nilai: [
-        { id: "n1", siswaId: "s1", mapelId: "m1", jenis: "UH1", nilai: 88, semester: "Ganjil", tahunAjaran: "2026/2027" },
-        { id: "n2", siswaId: "s1", mapelId: "m1", jenis: "UTS", nilai: 84, semester: "Ganjil", tahunAjaran: "2026/2027" },
-        { id: "n3", siswaId: "s2", mapelId: "m1", jenis: "UH1", nilai: 70, semester: "Ganjil", tahunAjaran: "2026/2027" },
-        { id: "n4", siswaId: "s2", mapelId: "m1", jenis: "UTS", nilai: 65, semester: "Ganjil", tahunAjaran: "2026/2027" },
-        { id: "n5", siswaId: "s3", mapelId: "m1", jenis: "UH1", nilai: 92, semester: "Ganjil", tahunAjaran: "2026/2027" },
-        { id: "n6", siswaId: "s4", mapelId: "m1", jenis: "UH1", nilai: 76, semester: "Ganjil", tahunAjaran: "2026/2027" },
-        { id: "n7", siswaId: "s1", mapelId: "m2", jenis: "UH1", nilai: 90, semester: "Ganjil", tahunAjaran: "2026/2027" },
-        { id: "n8", siswaId: "s2", mapelId: "m2", jenis: "UH1", nilai: 78, semester: "Ganjil", tahunAjaran: "2026/2027" },
-        { id: "n9", siswaId: "s8", mapelId: "m3", jenis: "UH1", nilai: 81, semester: "Ganjil", tahunAjaran: "2026/2027" },
-        { id: "n10", siswaId: "s9", mapelId: "m3", jenis: "UH1", nilai: 74, semester: "Ganjil", tahunAjaran: "2026/2027" },
-      ],
+      nilai: [], // nilai lama dimigrasikan otomatis ke nilaiMapel saat pembaruan data
       absensi: [
         { id: "a1", siswaId: "s1", tanggal: todayOffset(0), status: "Hadir" },
         { id: "a2", siswaId: "s2", tanggal: todayOffset(0), status: "Hadir" },
@@ -900,6 +860,30 @@ const DB = (function () {
           if (demoUser) { data.users.push(demoUser); changed = true; }
         }
       });
+      // Nilai dari menu lama dipindahkan satu kali ke input nilai mata pelajaran,
+      // sehingga riwayat pengguna lama tetap terbaca pada alur kerja yang baru.
+      data.migrations = data.migrations || {};
+      if (!data.migrations.nilaiKeMapelV1) {
+        (data.nilai || []).forEach((nilai) => {
+          if (data.nilaiMapel.some((item) => item.legacyNilaiId === nilai.id)) return;
+          const mapel = data.mapel.find((item) => item.id === nilai.mapelId);
+          const guru = mapel ? data.guru.find((item) => item.mapel === mapel.nama) : null;
+          data.nilaiMapel.push({
+            id: `nm_legacy_${nilai.id}`,
+            legacyNilaiId: nilai.id,
+            guruId: guru ? guru.id : "",
+            siswaId: nilai.siswaId,
+            mapelId: nilai.mapelId,
+            jenis: nilai.jenis,
+            nilai: nilai.nilai,
+            semester: nilai.semester,
+            tahunAjaran: nilai.tahunAjaran,
+          });
+          changed = true;
+        });
+        data.migrations.nilaiKeMapelV1 = true;
+        changed = true;
+      }
       if (changed) localStorage.setItem(DB_KEY, JSON.stringify(data));
       return data;
     }
@@ -1041,12 +1025,13 @@ const NAV_ITEMS = [
   { key: "guru", icon: "🧑‍🏫", label: "Data Guru", roles: ["admin"], adminGroup: true },
   { key: "tendik", icon: "🧰", label: "Tenaga Pendidik", roles: ["admin"], adminGroup: true },
   { key: "kelas", icon: "🏫", label: "Data Kelas", roles: ["admin"], adminGroup: true },
-  { key: "nilai", icon: "📝", label: "Nilai Akademik", roles: ["admin", "guru", "siswa"] },
-  { key: "absensi", icon: "🗓️", label: "Absensi", roles: ["admin", "guru", "siswa"] },
 
   { key: "jurnal-mengajar", icon: "📚", label: "Jurnal Mengajar", roles: ["admin", "guru"], guruMapelGroup: true },
   { key: "absensi-siswa", icon: "✅", label: "Absensi Siswa", roles: ["admin", "guru"], guruMapelGroup: true },
   { key: "input-nilai", icon: "✍️", label: "Input Nilai", roles: ["admin", "guru"], guruMapelGroup: true },
+
+  { key: "nilai-saya", icon: "📝", label: "Nilai Saya", roles: ["siswa"], siswaInfoGroup: true },
+  { key: "kehadiran-saya", icon: "🗓️", label: "Kehadiran Saya", roles: ["siswa"], siswaInfoGroup: true },
 
   { key: "wali-ringkasan", icon: "🏫", label: "Ringkasan Kelas", roles: ["admin", "guru"], waliKelasGroup: true },
   { key: "wali-siswa", icon: "🧑‍🎓", label: "Siswa Binaan", roles: ["admin", "guru"], waliKelasGroup: true },
@@ -1081,8 +1066,9 @@ const NAV_ITEMS = [
 
 const SIDEBAR_GROUPS = [
   { id: "guruMapelGroup", flag: "guruMapelGroup", label: "Guru Mata Pelajaran", icon: "🧑‍🏫", roles: ["admin", "guru"] },
-  { id: "waliKelasGroup", flag: "waliKelasGroup", label: "Wali Kelas", icon: "👩‍🏫", roles: ["admin", "guru"] },
+  { id: "waliKelasGroup", flag: "waliKelasGroup", label: "Wali Kelas", icon: "👩‍🏫", roles: ["admin", "guru"], isVisible: () => session.role === "admin" || !!(DB.findById("guru", session.linkedId) || {}).waliKelas },
   { id: "perpustakaanGroup", flag: "perpustakaanGroup", label: "Perpustakaan", icon: "📖", roles: ["admin", "guru"] },
+  { id: "siswaInfoGroup", flag: "siswaInfoGroup", label: "Informasi Akademik", icon: "🎒", roles: ["siswa"] },
   { id: "tuGroup", flag: "tuGroup", label: "TU & Persuratan Digital", icon: "✉️", roles: ["admin", "tendik"] },
   { id: "sarprasGroup", flag: "sarprasGroup", label: "Sarana & Prasarana", icon: "🏗️", roles: ["admin", "tendik"] },
   { id: "kepsekGroup", flag: "kepsekGroup", label: "Kepala Sekolah", icon: "👔", roles: ["admin", "kepsek"] },
@@ -1096,9 +1082,9 @@ const PAGE_META = {
   guru: { title: "Data Guru", sub: "Kelola data guru pengajar" },
   tendik: { title: "Tenaga Pendidik", sub: "Kelola data tenaga kependidikan (staf non-guru)" },
   kelas: { title: "Data Kelas", sub: "Kelola rombongan belajar (rombel) sekolah" },
-  nilai: { title: "Nilai Akademik", sub: "Kelola nilai akademik siswa per mata pelajaran" },
-  absensi: { title: "Absensi", sub: "Catat dan kelola kehadiran siswa harian" },
   "jurnal-mengajar": { title: "Jurnal Mengajar", sub: "Catat materi dan aktivitas pembelajaran setiap pertemuan" },
+  "nilai-saya": { title: "Nilai Saya", sub: "Pantau hasil penilaian mata pelajaran Anda" },
+  "kehadiran-saya": { title: "Kehadiran Saya", sub: "Pantau riwayat kehadiran Anda di sekolah" },
   "absensi-siswa": { title: "Absensi Siswa", sub: "Catat kehadiran siswa per mata pelajaran" },
   "input-nilai": { title: "Input Nilai", sub: "Input dan kelola nilai siswa pada mata pelajaran yang diampu" },
 
@@ -1167,7 +1153,7 @@ function buildSidebarNav() {
   const nav = document.getElementById("sidebarNav");
   const items = NAV_ITEMS.filter((item) => item.roles.includes(session.role));
   const currentKey = (window.location.hash || "#dashboard").replace("#", "");
-  const visibleGroups = SIDEBAR_GROUPS.filter((group) => group.roles.includes(session.role));
+  const visibleGroups = SIDEBAR_GROUPS.filter((group) => group.roles.includes(session.role) && (!group.isVisible || group.isVisible()));
   // Item grup yang tidak berlaku untuk peran saat ini tetap tampil datar;
   // contohnya Data Siswa dan Pengumuman bagi Guru/Siswa.
   const regularItems = items.filter((item) => !visibleGroups.some((group) => item[group.flag]));
@@ -1186,7 +1172,7 @@ function setActiveNav(key) {
     a.classList.toggle("active", a.dataset.key === key);
   });
   const navItem = NAV_ITEMS.find((n) => n.key === key);
-  SIDEBAR_GROUPS.filter((group) => group.roles.includes(session.role)).forEach((group) => {
+  SIDEBAR_GROUPS.filter((group) => group.roles.includes(session.role) && (!group.isVisible || group.isVisible())).forEach((group) => {
     const toggle = document.getElementById(`${group.id}Toggle`);
     const items = document.getElementById(`${group.id}Items`);
     if (!toggle || !items) return;
@@ -1226,9 +1212,9 @@ const ROUTES = {
   guru: renderGuru,
   tendik: renderTendik,
   kelas: renderKelas,
-  nilai: renderNilai,
-  absensi: renderAbsensi,
   "jurnal-mengajar": renderJurnalMengajar,
+  "nilai-saya": renderNilaiSaya,
+  "kehadiran-saya": renderKehadiranSaya,
   "absensi-siswa": renderAbsensiSiswaMapel,
   "input-nilai": renderInputNilaiMapel,
   "wali-ringkasan": renderWaliRingkasan,
@@ -1307,7 +1293,7 @@ function renderDashboard() {
   const guru = DB.get("guru");
   const kelas = DB.get("kelas");
   const absensi = DB.get("absensi");
-  const nilai = DB.get("nilai");
+  const nilai = DB.get("nilaiMapel");
   const pengumuman = DB.get("pengumuman");
   const settings = DB.get("settings");
 
@@ -1442,6 +1428,23 @@ function memberName(type, id) {
   const row = DB.findById(type === "guru" ? "guru" : "siswa", id);
   return row ? row.nama : "-";
 }
+function bukuTersedia(bukuId, excludePeminjamanId = "") {
+  const buku = DB.findById("buku", bukuId);
+  const dipinjam = DB.get("peminjamanBuku").filter((item) => item.id !== excludePeminjamanId && item.bukuId === bukuId && item.status === "Dipinjam").length;
+  return Math.max(0, Number(buku ? buku.stok : 0) - dipinjam);
+}
+function asetTersedia(inventarisId, excludePeminjamanId = "") {
+  const aset = DB.findById("inventaris", inventarisId);
+  const dipinjam = DB.get("peminjamanAset").filter((item) => item.id !== excludePeminjamanId && item.inventarisId === inventarisId && item.status === "Dipinjam").length;
+  return Math.max(0, Number(aset ? aset.jumlah : 0) - dipinjam);
+}
+function syncStatusSuratMasuk(suratMasukId) {
+  const surat = DB.findById("suratMasuk", suratMasukId);
+  if (!surat) return;
+  const disposisi = DB.get("disposisiSurat").filter((item) => item.suratMasukId === suratMasukId);
+  const status = disposisi.some((item) => item.status === "Diproses") ? "Sudah Didisposisikan" : disposisi.some((item) => item.status === "Selesai") ? "Selesai" : "Baru";
+  DB.update("suratMasuk", suratMasukId, { status });
+}
 function currentTendikId() { return session.role === "tendik" ? session.linkedId : ""; }
 
 function openDataForm({ title, fields, values = {}, submitLabel = "Simpan", onSave }) {
@@ -1532,10 +1535,25 @@ function renderWaliAbsensi() {
   const siswa = activeSiswa().filter((s) => s.kelas === state.kelas);
   const data = DB.get("absensi").filter((a) => a.tanggal === state.tanggal && siswa.some((s) => s.id === a.siswaId));
   const count = (status) => data.filter((a) => a.status === status).length;
-  const rows = siswa.map((s) => { const absen = data.find((a) => a.siswaId === s.id); return `<tr><td>${escapeHtml(s.nama)}</td><td>${escapeHtml(s.nis)}</td><td>${supportBadge(absen ? absen.status : "Belum Tercatat")}</td></tr>`; }).join("");
-  content.innerHTML = `${waliClassToolbar(state, "wa", true)}<div class="stat-grid" style="margin-bottom:16px;">${["Hadir","Sakit","Izin","Alpa"].map((status) => `<div class="stat-card"><div class="stat-info"><div class="label">${status}</div><div class="value">${count(status)}</div></div><div class="stat-icon ${status === "Hadir" ? "icon-green" : status === "Alpa" ? "icon-red" : "icon-orange"}">${status === "Hadir" ? "✅" : status === "Alpa" ? "❌" : "📅"}</div></div>`).join("")}</div><div class="table-wrap"><table><thead><tr><th>Nama Siswa</th><th>NIS</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+  const rows = siswa.map((s) => {
+    const absen = data.find((a) => a.siswaId === s.id);
+    const statusAktif = absen ? absen.status : "Hadir";
+    return `<tr><td><div class="tname">${escapeHtml(s.nama)}</div></td><td>${escapeHtml(s.nis)}</td><td><div class="row-actions">${["Hadir", "Sakit", "Izin", "Alpa"].map((status) => `<button class="btn btn-sm ${status === statusAktif ? "btn-blue" : "btn-outline"}" type="button" onclick="setWaliAbsen('${s.id}', '${status}')">${status}</button>`).join("")}</div></td></tr>`;
+  }).join("");
+  content.innerHTML = `${waliClassToolbar(state, "wa", true)}<div class="card" style="margin-bottom:16px; padding:14px 18px;"><span class="text-muted" style="font-size:13px;">Klik status kehadiran untuk menyimpan absensi ${escapeHtml(state.kelas)} secara otomatis pada ${formatDate(state.tanggal)}.</span></div><div class="stat-grid" style="margin-bottom:16px;">${["Hadir","Sakit","Izin","Alpa"].map((status) => `<div class="stat-card"><div class="stat-info"><div class="label">${status}</div><div class="value">${count(status)}</div></div><div class="stat-icon ${status === "Hadir" ? "icon-green" : status === "Alpa" ? "icon-red" : "icon-orange"}">${status === "Hadir" ? "✅" : status === "Alpa" ? "❌" : "📅"}</div></div>`).join("")}</div><div class="table-wrap"><table><thead><tr><th>Nama Siswa</th><th>NIS</th><th>Status Kehadiran</th></tr></thead><tbody>${rows}</tbody></table></div>`;
   bindWaliToolbar(state, "wa", renderWaliAbsensi, true);
 }
+window.setWaliAbsen = function(siswaId, status) {
+  const state = waliClassState("waliAbsensiState");
+  const siswa = DB.findById("siswa", siswaId);
+  if (!siswa || siswa.kelas !== state.kelas) { showToast("Siswa tidak sesuai dengan kelas yang dipilih.", "error"); return; }
+  const data = DB.get("absensi");
+  const existing = data.find((item) => item.siswaId === siswaId && item.tanggal === state.tanggal);
+  if (existing) DB.update("absensi", existing.id, { status });
+  else DB.insert("absensi", { siswaId, tanggal: state.tanggal, status });
+  showToast(`Kehadiran ${siswa.nama} diperbarui: ${status}`, "success");
+  renderWaliAbsensi();
+};
 function renderWaliCatatan() {
   const content = document.getElementById("pageContent");
   const state = waliClassState("waliCatatanState");
@@ -1568,7 +1586,7 @@ window.deleteWaliCatatan = (id) => { const record = DB.findById("waliCatatan", i
 function renderPerpusKoleksi() {
   const content = document.getElementById("pageContent");
   const records = [...DB.get("buku")].sort((a, b) => a.judul.localeCompare(b.judul));
-  const rows = records.map((b) => `<tr><td><span class="badge badge-gray">${escapeHtml(b.kode)}</span></td><td><div class="tname">${escapeHtml(b.judul)}</div><div class="tsub">${escapeHtml(b.penulis)} • ${escapeHtml(b.tahun)}</div></td><td>${escapeHtml(b.kategori)}</td><td>${escapeHtml(b.lokasi)}</td><td>${b.stok}</td><td>${supportBadge(b.kondisi)}</td><td><div class="row-actions"><button class="action-btn" onclick="editBuku('${b.id}')" title="Edit">✏️</button><button class="action-btn danger" onclick="deleteBuku('${b.id}')" title="Hapus">🗑️</button></div></td></tr>`).join("");
+  const rows = records.map((b) => `<tr><td><span class="badge badge-gray">${escapeHtml(b.kode)}</span></td><td><div class="tname">${escapeHtml(b.judul)}</div><div class="tsub">${escapeHtml(b.penulis)} • ${escapeHtml(b.tahun)}</div></td><td>${escapeHtml(b.kategori)}</td><td>${escapeHtml(b.lokasi)}</td><td><div class="tname">${b.stok}</div><div class="tsub">Tersedia: ${bukuTersedia(b.id)}</div></td><td>${supportBadge(b.kondisi)}</td><td><div class="row-actions"><button class="action-btn" onclick="editBuku('${b.id}')" title="Edit">✏️</button><button class="action-btn danger" onclick="deleteBuku('${b.id}')" title="Hapus">🗑️</button></div></td></tr>`).join("");
   content.innerHTML = `<div class="toolbar"><div></div><button class="btn btn-blue" id="btnAddBuku">➕ Tambah Buku</button></div>${records.length ? `<div class="table-wrap"><table><thead><tr><th>Kode</th><th>Buku</th><th>Kategori</th><th>Lokasi</th><th>Stok</th><th>Kondisi</th><th>Aksi</th></tr></thead><tbody>${rows}</tbody></table></div>` : pageEmpty("📚", "Belum ada koleksi buku.")}`;
   document.getElementById("btnAddBuku").addEventListener("click", () => openBukuForm());
 }
@@ -1591,7 +1609,20 @@ function peminjamanBukuFields() { return [
   { key: "anggota", label: "Peminjam", type: "select", options: memberRecords(), required: true },
   { key: "tanggalPinjam", label: "Tanggal Pinjam", type: "date", required: true }, { key: "jatuhTempo", label: "Jatuh Tempo", type: "date", required: true }, { key: "status", label: "Status", type: "select", options: ["Dipinjam","Dikembalikan"].map((x) => ({ value: x, label: x })), required: true },
 ]; }
-window.openPeminjamanBukuForm = function(record) { const values = record ? { ...record, anggota: `${record.anggotaTipe}:${record.anggotaId}` } : { tanggalPinjam: todayISO(), jatuhTempo: todayISO(), status: "Dipinjam" }; openDataForm({ title: record ? "Edit Peminjaman Buku" : "Catat Peminjaman Buku", fields: peminjamanBukuFields(), values, submitLabel: "Simpan Transaksi", onSave: (payload) => { const [anggotaTipe, anggotaId] = payload.anggota.split(":"); const saved = { bukuId: payload.bukuId, anggotaTipe, anggotaId, tanggalPinjam: payload.tanggalPinjam, jatuhTempo: payload.jatuhTempo, status: payload.status, tanggalKembali: payload.status === "Dikembalikan" ? (record?.tanggalKembali || todayISO()) : "", petugasId: session.role === "guru" ? session.linkedId : (record?.petugasId || "") }; if (record) DB.update("peminjamanBuku", record.id, saved); else DB.insert("peminjamanBuku", saved); showToast("Transaksi buku berhasil disimpan.", "success"); renderPerpusSirkulasi(); } }); };
+window.openPeminjamanBukuForm = function(record) {
+  const values = record ? { ...record, anggota: `${record.anggotaTipe}:${record.anggotaId}` } : { tanggalPinjam: todayISO(), jatuhTempo: todayISO(), status: "Dipinjam" };
+  openDataForm({ title: record ? "Edit Peminjaman Buku" : "Catat Peminjaman Buku", fields: peminjamanBukuFields(), values, submitLabel: "Simpan Transaksi", onSave: (payload) => {
+    if (payload.status === "Dipinjam" && bukuTersedia(payload.bukuId, record ? record.id : "") < 1) {
+      showToast("Stok buku tidak tersedia untuk dipinjam.", "error");
+      return false;
+    }
+    const [anggotaTipe, anggotaId] = payload.anggota.split(":");
+    const saved = { bukuId: payload.bukuId, anggotaTipe, anggotaId, tanggalPinjam: payload.tanggalPinjam, jatuhTempo: payload.jatuhTempo, status: payload.status, tanggalKembali: payload.status === "Dikembalikan" ? (record?.tanggalKembali || todayISO()) : "", petugasId: session.role === "guru" ? session.linkedId : (record?.petugasId || "") };
+    if (record) DB.update("peminjamanBuku", record.id, saved); else DB.insert("peminjamanBuku", saved);
+    showToast("Transaksi buku berhasil disimpan.", "success");
+    renderPerpusSirkulasi();
+  }});
+};
 window.editPeminjamanBuku = (id) => { const record = DB.findById("peminjamanBuku", id); if (record) openPeminjamanBukuForm(record); };
 window.returnBuku = (id) => { DB.update("peminjamanBuku", id, { status: "Dikembalikan", tanggalKembali: todayISO() }); showToast("Buku ditandai telah dikembalikan.", "success"); renderPerpusSirkulasi(); };
 window.deletePeminjamanBuku = (id) => deleteSupportRecord("peminjamanBuku", id, "Hapus Transaksi?", "Transaksi peminjaman akan dihapus.", renderPerpusSirkulasi);
@@ -1648,9 +1679,27 @@ function renderDisposisiSurat() {
 function disposisiFields() { return [
   { key: "suratMasukId", label: "Surat Masuk", type: "select", options: DB.get("suratMasuk").map((s) => ({ value: s.id, label: `${s.nomorAgenda} — ${s.perihal}` })), required: true }, { key: "kepada", label: "Diteruskan Kepada", required: true }, { key: "instruksi", label: "Instruksi Disposisi", type: "textarea", full: true, required: true }, { key: "batasWaktu", label: "Batas Waktu", type: "date", required: true }, { key: "status", label: "Status", type: "select", options: ["Diproses","Selesai"].map((x) => ({ value: x, label: x })), required: true },
 ]; }
-window.openDisposisiForm = function(record) { openDataForm({ title: record ? "Edit Disposisi" : "Buat Disposisi", fields: disposisiFields(), values: record || { batasWaktu: todayISO(), status: "Diproses" }, submitLabel: "Simpan Disposisi", onSave: (payload) => { if (record) DB.update("disposisiSurat", record.id, payload); else DB.insert("disposisiSurat", { ...payload, petugasId: currentTendikId() }); const surat = DB.findById("suratMasuk", payload.suratMasukId); if (surat && payload.status === "Diproses") DB.update("suratMasuk", surat.id, { status: "Sudah Didisposisikan" }); showToast("Disposisi berhasil disimpan.", "success"); renderDisposisiSurat(); } }); };
+window.openDisposisiForm = function(record) {
+  openDataForm({ title: record ? "Edit Disposisi" : "Buat Disposisi", fields: disposisiFields(), values: record || { batasWaktu: todayISO(), status: "Diproses" }, submitLabel: "Simpan Disposisi", onSave: (payload) => {
+    const suratLamaId = record ? record.suratMasukId : "";
+    if (record) DB.update("disposisiSurat", record.id, payload); else DB.insert("disposisiSurat", { ...payload, petugasId: currentTendikId() });
+    if (suratLamaId) syncStatusSuratMasuk(suratLamaId);
+    syncStatusSuratMasuk(payload.suratMasukId);
+    showToast("Disposisi berhasil disimpan dan status surat diperbarui.", "success");
+    renderDisposisiSurat();
+  }});
+};
 window.editDisposisi = (id) => { const record = DB.findById("disposisiSurat", id); if (record) openDisposisiForm(record); };
-window.deleteDisposisi = (id) => deleteSupportRecord("disposisiSurat", id, "Hapus Disposisi?", "Data disposisi akan dihapus permanen.", renderDisposisiSurat);
+window.deleteDisposisi = (id) => {
+  const record = DB.findById("disposisiSurat", id);
+  if (!record) return;
+  confirmDialog({ title: "Hapus Disposisi?", message: "Data disposisi akan dihapus permanen.", confirmText: "Ya, Hapus", onConfirm: () => {
+    DB.remove("disposisiSurat", id);
+    syncStatusSuratMasuk(record.suratMasukId);
+    showToast("Disposisi dihapus dan status surat diperbarui.", "success");
+    renderDisposisiSurat();
+  }});
+};
 
 function renderLaporanPersuratan() {
   const content = document.getElementById("pageContent");
@@ -1663,7 +1712,7 @@ function renderLaporanPersuratan() {
 function renderInventaris() {
   const content = document.getElementById("pageContent");
   const records = [...DB.get("inventaris")].sort((a, b) => a.nama.localeCompare(b.nama));
-  const rows = records.map((i) => `<tr><td><span class="badge badge-gray">${escapeHtml(i.kode)}</span></td><td>${escapeHtml(i.nama)}</td><td>${escapeHtml(i.kategori)}</td><td>${escapeHtml(i.lokasi)}</td><td>${i.jumlah}</td><td>${supportBadge(i.kondisi)}</td><td>${escapeHtml(i.tahunPerolehan || "-")}</td><td><div class="row-actions"><button class="action-btn" onclick="editInventaris('${i.id}')" title="Edit">✏️</button><button class="action-btn danger" onclick="deleteInventaris('${i.id}')" title="Hapus">🗑️</button></div></td></tr>`).join("");
+  const rows = records.map((i) => `<tr><td><span class="badge badge-gray">${escapeHtml(i.kode)}</span></td><td>${escapeHtml(i.nama)}</td><td>${escapeHtml(i.kategori)}</td><td>${escapeHtml(i.lokasi)}</td><td><div class="tname">${i.jumlah}</div><div class="tsub">Tersedia: ${asetTersedia(i.id)}</div></td><td>${supportBadge(i.kondisi)}</td><td>${escapeHtml(i.tahunPerolehan || "-")}</td><td><div class="row-actions"><button class="action-btn" onclick="editInventaris('${i.id}')" title="Edit">✏️</button><button class="action-btn danger" onclick="deleteInventaris('${i.id}')" title="Hapus">🗑️</button></div></td></tr>`).join("");
   content.innerHTML = `<div class="toolbar"><div></div><button class="btn btn-blue" id="btnAddInventaris">➕ Tambah Inventaris</button></div>${records.length ? `<div class="table-wrap"><table><thead><tr><th>Kode</th><th>Nama Barang</th><th>Kategori</th><th>Lokasi</th><th>Jumlah</th><th>Kondisi</th><th>Tahun</th><th>Aksi</th></tr></thead><tbody>${rows}</tbody></table></div>` : pageEmpty("📦", "Belum ada data inventaris.")}`;
   document.getElementById("btnAddInventaris").addEventListener("click", () => openInventarisForm());
 }
@@ -1684,7 +1733,17 @@ function renderPeminjamanAset() {
 function peminjamanAsetFields() { return [
   { key: "inventarisId", label: "Aset/Barang", type: "select", options: DB.get("inventaris").map((i) => ({ value: i.id, label: `${i.kode} — ${i.nama}` })), required: true }, { key: "peminjam", label: "Nama Peminjam", required: true }, { key: "tanggalPinjam", label: "Tanggal Pinjam", type: "date", required: true }, { key: "tanggalKembali", label: "Rencana Tanggal Kembali", type: "date" }, { key: "keperluan", label: "Keperluan", type: "textarea", full: true, required: true }, { key: "status", label: "Status", type: "select", options: ["Dipinjam","Dikembalikan"].map((x) => ({ value: x, label: x })), required: true },
 ]; }
-window.openPeminjamanAsetForm = function(record) { openDataForm({ title: record ? "Edit Peminjaman Aset" : "Catat Peminjaman Aset", fields: peminjamanAsetFields(), values: record || { tanggalPinjam: todayISO(), status: "Dipinjam" }, submitLabel: "Simpan Peminjaman", onSave: (payload) => { if (record) DB.update("peminjamanAset", record.id, payload); else DB.insert("peminjamanAset", { ...payload, petugasId: currentTendikId() }); showToast("Peminjaman aset berhasil disimpan.", "success"); renderPeminjamanAset(); } }); };
+window.openPeminjamanAsetForm = function(record) {
+  openDataForm({ title: record ? "Edit Peminjaman Aset" : "Catat Peminjaman Aset", fields: peminjamanAsetFields(), values: record || { tanggalPinjam: todayISO(), status: "Dipinjam" }, submitLabel: "Simpan Peminjaman", onSave: (payload) => {
+    if (payload.status === "Dipinjam" && asetTersedia(payload.inventarisId, record ? record.id : "") < 1) {
+      showToast("Unit aset tidak tersedia untuk dipinjam.", "error");
+      return false;
+    }
+    if (record) DB.update("peminjamanAset", record.id, payload); else DB.insert("peminjamanAset", { ...payload, petugasId: currentTendikId() });
+    showToast("Peminjaman aset berhasil disimpan.", "success");
+    renderPeminjamanAset();
+  }});
+};
 window.editPeminjamanAset = (id) => { const record = DB.findById("peminjamanAset", id); if (record) openPeminjamanAsetForm(record); };
 window.returnAset = (id) => { DB.update("peminjamanAset", id, { status: "Dikembalikan", tanggalKembali: todayISO() }); showToast("Aset ditandai telah dikembalikan.", "success"); renderPeminjamanAset(); };
 window.deletePeminjamanAset = (id) => deleteSupportRecord("peminjamanAset", id, "Hapus Peminjaman?", "Data peminjaman aset akan dihapus.", renderPeminjamanAset);
@@ -1713,13 +1772,13 @@ function renderLaporanSarpras() {
 /* ---- KEPALA SEKOLAH (MONITORING BACA SAJA) ---- */
 function renderKepsekDashboard() {
   const content = document.getElementById("pageContent");
-  const settings = DB.get("settings"); const siswa = activeSiswa(); const guru = DB.get("guru").filter((g) => g.status === "Aktif"); const todayAbs = DB.get("absensi").filter((a) => a.tanggal === todayISO()); const hadir = todayAbs.filter((a) => a.status === "Hadir").length; const presentRate = todayAbs.length ? Math.round((hadir / todayAbs.length) * 100) : 0; const nilai = DB.get("nilai"); const average = nilai.length ? Math.round(nilai.reduce((total, n) => total + Number(n.nilai), 0) / nilai.length) : 0;
+  const settings = DB.get("settings"); const siswa = activeSiswa(); const guru = DB.get("guru").filter((g) => g.status === "Aktif"); const todayAbs = DB.get("absensi").filter((a) => a.tanggal === todayISO()); const hadir = todayAbs.filter((a) => a.status === "Hadir").length; const presentRate = todayAbs.length ? Math.round((hadir / todayAbs.length) * 100) : 0; const nilai = DB.get("nilaiMapel"); const average = nilai.length ? Math.round(nilai.reduce((total, n) => total + Number(n.nilai), 0) / nilai.length) : 0;
   const kepsek = DB.findById("kepsek", session.role === "kepsek" ? session.linkedId : "ks1") || { nama: settings.kepsek };
   content.innerHTML = `<div class="card" style="margin-bottom:16px;"><div class="flex gap-12" style="align-items:center;"><div class="stat-icon icon-blue">👔</div><div><div class="text-muted" style="font-size:12px;">Monitoring Kepala Sekolah</div><h3 style="margin:3px 0;">${escapeHtml(kepsek.nama || settings.kepsek)}</h3><div class="text-muted" style="font-size:13px;">Tahun Ajaran ${escapeHtml(settings.tahunAjaran)} • Semester ${escapeHtml(settings.semester)}</div></div></div></div><div class="stat-grid"><div class="stat-card"><div class="stat-info"><div class="label">Siswa Aktif</div><div class="value">${siswa.length}</div></div><div class="stat-icon icon-blue">🧑‍🎓</div></div><div class="stat-card"><div class="stat-info"><div class="label">Guru Aktif</div><div class="value">${guru.length}</div></div><div class="stat-icon icon-purple">🧑‍🏫</div></div><div class="stat-card"><div class="stat-info"><div class="label">Kehadiran Hari Ini</div><div class="value">${presentRate}%</div><div class="delta">${hadir} siswa hadir</div></div><div class="stat-icon icon-green">✅</div></div><div class="stat-card"><div class="stat-info"><div class="label">Rata-rata Nilai</div><div class="value">${average}</div></div><div class="stat-icon icon-orange">🎓</div></div></div><div class="grid-2"><div class="card"><div class="card-head"><div><h3>Status Operasional</h3><p>Ringkasan modul pendukung</p></div></div><div class="activity-item"><div class="activity-dot icon-blue">✉️</div><div><div class="activity-text"><b>${DB.get("suratMasuk").filter((s) => s.status !== "Selesai").length}</b> surat masuk perlu perhatian</div></div></div><div class="activity-item"><div class="activity-dot icon-orange">🛠️</div><div><div class="activity-text"><b>${DB.get("inventaris").filter((i) => i.kondisi !== "Baik").length}</b> aset perlu perawatan</div></div></div></div><div class="card"><div class="card-head"><div><h3>Akses Monitoring</h3><p>Gunakan submenu Kepala Sekolah untuk rincian</p></div></div><div class="flex gap-8" style="flex-wrap:wrap;"><a class="btn btn-outline btn-sm" href="#kepsek-akademik">Akademik →</a><a class="btn btn-outline btn-sm" href="#kepsek-kehadiran">Kehadiran →</a><a class="btn btn-outline btn-sm" href="#kepsek-sarpras">Sarpras →</a></div></div></div>`;
 }
 function renderKepsekAkademik() {
   const content = document.getElementById("pageContent");
-  const allNilai = DB.get("nilai"); const mapel = DB.get("mapel"); const journals = DB.get("jurnalMengajar"); const rows = mapel.map((m) => { const values = allNilai.filter((n) => n.mapelId === m.id); const avg = values.length ? Math.round(values.reduce((total, n) => total + Number(n.nilai), 0) / values.length) : 0; const below = values.filter((n) => Number(n.nilai) < m.kkm).length; return `<tr><td>${escapeHtml(m.nama)}</td><td>${m.kkm}</td><td>${values.length}</td><td>${avg || "-"}</td><td>${below ? supportBadge(`${below} di bawah KKM`) : supportBadge("Tuntas")}</td></tr>`; }).join("");
+  const allNilai = DB.get("nilaiMapel"); const mapel = DB.get("mapel"); const journals = DB.get("jurnalMengajar"); const rows = mapel.map((m) => { const values = allNilai.filter((n) => n.mapelId === m.id); const avg = values.length ? Math.round(values.reduce((total, n) => total + Number(n.nilai), 0) / values.length) : 0; const below = values.filter((n) => Number(n.nilai) < m.kkm).length; return `<tr><td>${escapeHtml(m.nama)}</td><td>${m.kkm}</td><td>${values.length}</td><td>${avg || "-"}</td><td>${below ? supportBadge(`${below} di bawah KKM`) : supportBadge("Tuntas")}</td></tr>`; }).join("");
   content.innerHTML = `<div class="stat-grid" style="margin-bottom:16px;"><div class="stat-card"><div class="stat-info"><div class="label">Nilai Tercatat</div><div class="value">${allNilai.length}</div></div><div class="stat-icon icon-blue">📝</div></div><div class="stat-card"><div class="stat-info"><div class="label">Jurnal Mengajar</div><div class="value">${journals.length}</div></div><div class="stat-icon icon-purple">📚</div></div><div class="stat-card"><div class="stat-info"><div class="label">Mapel Aktif</div><div class="value">${mapel.length}</div></div><div class="stat-icon icon-green">🎓</div></div></div><div class="table-wrap"><table><thead><tr><th>Mata Pelajaran</th><th>KKM</th><th>Nilai Tercatat</th><th>Rata-rata</th><th>Evaluasi</th></tr></thead><tbody>${rows}</tbody></table></div>`;
 }
 function renderKepsekKehadiran() {
@@ -1737,13 +1796,36 @@ function renderKepsekLaporan() {
   const content = document.getElementById("pageContent");
   const settings = DB.get("settings");
   const summaries = [
-    ["Akademik", "🎓", `${DB.get("nilai").length + DB.get("nilaiMapel").length} nilai tercatat dan ${DB.get("jurnalMengajar").length} jurnal mengajar`],
+    ["Akademik", "🎓", `${DB.get("nilaiMapel").length} nilai tercatat dan ${DB.get("jurnalMengajar").length} jurnal mengajar`],
     ["Kehadiran", "✅", `${DB.get("absensi").length} absensi harian dan ${DB.get("absensiMapel").length} absensi mapel`],
     ["Perpustakaan", "📚", `${DB.get("buku").length} judul buku dengan ${DB.get("peminjamanBuku").filter((p) => p.status === "Dipinjam").length} pinjaman aktif`],
     ["Persuratan", "✉️", `${DB.get("suratMasuk").length} surat masuk dan ${DB.get("suratKeluar").length} surat keluar`],
     ["Sarpras", "🏗️", `${DB.get("inventaris").length} jenis inventaris dan ${DB.get("pemeliharaanAset").filter((m) => m.status !== "Selesai").length} pemeliharaan aktif`],
   ].map(([name, icon, desc]) => `<div class="activity-item"><div class="activity-dot icon-blue">${icon}</div><div><div class="activity-text"><b>${name}</b></div><div class="activity-time">${desc}</div></div></div>`).join("");
   content.innerHTML = `<div class="card"><div class="card-head"><div><h3>Ringkasan Laporan Sekolah</h3><p>Tahun Ajaran ${escapeHtml(settings.tahunAjaran)} • Semester ${escapeHtml(settings.semester)}</p></div></div>${summaries}<div class="text-muted" style="font-size:12.5px; margin-top:16px;">Data monitoring bersifat baca saja untuk akun Kepala Sekolah dan diperbarui mengikuti transaksi dari setiap modul.</div></div>`;
+}
+
+/* ---- INFORMASI MANDIRI SISWA ---- */
+function renderNilaiSaya() {
+  const content = document.getElementById("pageContent");
+  const nilai = DB.get("nilaiMapel").filter((item) => item.siswaId === session.linkedId).sort((a, b) => a.mapelId.localeCompare(b.mapelId));
+  const mapel = DB.get("mapel");
+  const average = nilai.length ? Math.round(nilai.reduce((total, item) => total + Number(item.nilai), 0) / nilai.length) : 0;
+  const belowKkm = nilai.filter((item) => { const m = mapel.find((itemMapel) => itemMapel.id === item.mapelId); return m && Number(item.nilai) < Number(m.kkm); }).length;
+  const rows = nilai.map((item) => {
+    const m = mapel.find((itemMapel) => itemMapel.id === item.mapelId) || {};
+    const lulus = Number(item.nilai) >= Number(m.kkm || 75);
+    return `<tr><td>${escapeHtml(m.nama || "-")}</td><td>${escapeHtml(item.jenis)}</td><td>${lulus ? `<span class="badge badge-green">${item.nilai}</span>` : `<span class="badge badge-red">${item.nilai}</span>`}</td><td>${m.kkm || "-"}</td><td>${lulus ? supportBadge("Tuntas") : supportBadge("Perlu Bimbingan")}</td><td>${escapeHtml(item.semester)} ${escapeHtml(item.tahunAjaran)}</td></tr>`;
+  }).join("");
+  content.innerHTML = `<div class="stat-grid" style="margin-bottom:16px;"><div class="stat-card"><div class="stat-info"><div class="label">Nilai Tercatat</div><div class="value">${nilai.length}</div></div><div class="stat-icon icon-blue">📝</div></div><div class="stat-card"><div class="stat-info"><div class="label">Rata-rata Nilai</div><div class="value">${average}</div></div><div class="stat-icon icon-purple">🎓</div></div><div class="stat-card"><div class="stat-info"><div class="label">Perlu Bimbingan</div><div class="value">${belowKkm}</div></div><div class="stat-icon ${belowKkm ? "icon-orange" : "icon-green"}">${belowKkm ? "📚" : "✅"}</div></div></div>${nilai.length ? `<div class="table-wrap"><table><thead><tr><th>Mata Pelajaran</th><th>Jenis</th><th>Nilai</th><th>KKM</th><th>Status</th><th>Periode</th></tr></thead><tbody>${rows}</tbody></table></div>` : pageEmpty("📝", "Belum ada nilai mata pelajaran yang dipublikasikan.")}`;
+}
+function renderKehadiranSaya() {
+  const content = document.getElementById("pageContent");
+  const data = [...DB.get("absensi")].filter((item) => item.siswaId === session.linkedId).sort((a, b) => b.tanggal.localeCompare(a.tanggal));
+  const total = data.length;
+  const count = (status) => data.filter((item) => item.status === status).length;
+  const rows = data.map((item) => `<tr><td>${formatDate(item.tanggal)}</td><td>${supportBadge(item.status)}</td></tr>`).join("");
+  content.innerHTML = `<div class="stat-grid" style="margin-bottom:16px;">${["Hadir", "Sakit", "Izin", "Alpa"].map((status) => `<div class="stat-card"><div class="stat-info"><div class="label">${status}</div><div class="value">${count(status)}</div><div class="delta">${total ? Math.round((count(status) / total) * 100) : 0}% dari catatan</div></div><div class="stat-icon ${status === "Hadir" ? "icon-green" : status === "Alpa" ? "icon-red" : "icon-orange"}">${status === "Hadir" ? "✅" : status === "Alpa" ? "❌" : "📅"}</div></div>`).join("")}</div>${total ? `<div class="table-wrap"><table><thead><tr><th>Tanggal</th><th>Status Kehadiran</th></tr></thead><tbody>${rows}</tbody></table></div>` : pageEmpty("🗓️", "Belum ada riwayat kehadiran.")}`;
 }
 
 /* ---- DATA SISWA ---- */
@@ -2183,198 +2265,6 @@ window.deleteKelas = function(id) {
     confirmText: "Ya, Hapus",
     onConfirm: () => { DB.remove("kelas", id); showToast("Data kelas berhasil dihapus.", "success"); renderKelas(); },
   });
-};
-
-/* ---- NILAI ---- */
-function renderNilai() {
-  const content = document.getElementById("pageContent");
-  const canEdit = session.role === "admin" || session.role === "guru";
-  if (!window.nilaiState) window.nilaiState = { filterKelas: "", filterMapel: "", searchTerm: "" };
-  const state = window.nilaiState;
-
-  function renderToolbar() {
-    const kelasList = DB.get("kelas");
-    const mapelList = DB.get("mapel");
-    return `
-      <div class="toolbar">
-        <div class="toolbar-left">
-          <div class="search-box"><span class="ic">🔍</span><input type="text" id="searchInput" placeholder="Cari nama siswa..." value="${escapeHtml(state.searchTerm)}" /></div>
-          <select class="select-filter" id="filterKelas"><option value="">Semua Kelas</option>${kelasList.map(k => `<option value="${escapeHtml(k.nama)}" ${state.filterKelas===k.nama?"selected":""}>${escapeHtml(k.nama)}</option>`).join("")}</select>
-          <select class="select-filter" id="filterMapel"><option value="">Semua Mapel</option>${mapelList.map(m => `<option value="${m.id}" ${state.filterMapel===m.id?"selected":""}>${escapeHtml(m.nama)}</option>`).join("")}</select>
-        </div>
-        ${canEdit ? `<button class="btn btn-blue" id="btnAddNilai">➕ Input Nilai</button>` : ""}
-      </div>`;
-  }
-
-  function nilaiBadge(nilai, kkm) {
-    return nilai >= kkm ? `<span class="badge badge-green">${nilai}</span>` : `<span class="badge badge-red">${nilai}</span>`;
-  }
-
-  function renderTable() {
-    let nilaiData = DB.get("nilai");
-    const siswaList = DB.get("siswa");
-    const mapelList = DB.get("mapel");
-
-    if (session.role === "siswa") nilaiData = nilaiData.filter(n => n.siswaId === session.linkedId);
-    if (state.filterMapel) nilaiData = nilaiData.filter(n => n.mapelId === state.filterMapel);
-
-    let enriched = nilaiData.map(n => {
-      const s = siswaList.find(x => x.id === n.siswaId) || {};
-      const m = mapelList.find(x => x.id === n.mapelId) || {};
-      return Object.assign({}, n, { _siswaNama: s.nama || "-", _kelas: s.kelas || "-", _mapelNama: m.nama || "-", _kkm: m.kkm || 75 });
-    });
-
-    if (state.filterKelas) enriched = enriched.filter(n => n._kelas === state.filterKelas);
-    if (state.searchTerm) {
-      const q = state.searchTerm.toLowerCase();
-      enriched = enriched.filter(n => n._siswaNama.toLowerCase().includes(q));
-    }
-    enriched.sort((a,b) => a._siswaNama.localeCompare(b._siswaNama));
-
-    if (enriched.length === 0) return `<div class="table-wrap"><div class="empty-state"><div class="ic">📝</div>Belum ada data nilai yang tercatat.</div></div>`;
-
-    const rows = enriched.map(n => `
-      <tr>
-        <td><div class="table-avatar"><div class="avatar">${initials(n._siswaNama)}</div><div><div class="tname">${escapeHtml(n._siswaNama)}</div><div class="tsub">${escapeHtml(n._kelas)}</div></div></div></td>
-        <td>${escapeHtml(n._mapelNama)}</td>
-        <td><span class="badge badge-gray">${escapeHtml(n.jenis)}</span></td>
-        <td>${nilaiBadge(n.nilai, n._kkm)}</td>
-        <td>${escapeHtml(n.semester)} ${escapeHtml(n.tahunAjaran)}</td>
-        ${canEdit ? `<td><div class="row-actions"><button class="action-btn" title="Edit" onclick="editNilai('${n.id}')">✏️</button><button class="action-btn danger" title="Hapus" onclick="deleteNilai('${n.id}')">🗑️</button></div></td>` : ""}
-      </tr>`).join("");
-
-    return `<div class="table-wrap"><table><thead><tr><th>Siswa</th><th>Mapel</th><th>Jenis</th><th>Nilai</th><th>Periode</th>${canEdit?"<th>Aksi</th>":""}</tr></thead><tbody>${rows}</tbody></table></div>`;
-  }
-
-  content.innerHTML = renderToolbar() + renderTable();
-  document.getElementById("searchInput").addEventListener("input", debounce((e) => {
-    state.searchTerm = e.target.value;
-    renderNilai();
-    const input = document.getElementById("searchInput");
-    input.focus();
-    input.setSelectionRange(input.value.length, input.value.length);
-  }, 300));
-  document.getElementById("filterKelas").addEventListener("change", (e) => { state.filterKelas = e.target.value; renderNilai(); });
-  document.getElementById("filterMapel").addEventListener("change", (e) => { state.filterMapel = e.target.value; renderNilai(); });
-  const addBtn = document.getElementById("btnAddNilai");
-  if (addBtn) addBtn.addEventListener("click", () => openNilaiForm());
-}
-
-function populateSiswaSelectNilai(selected) {
-  const siswa = DB.get("siswa").filter(s => s.status === "Aktif");
-  document.getElementById("nSiswa").innerHTML = siswa.map(s => `<option value="${s.id}" ${s.id===selected?"selected":""}>${escapeHtml(s.nama)} (${escapeHtml(s.kelas)})</option>`).join("");
-}
-function populateMapelSelectNilai(selected) {
-  const mapel = DB.get("mapel");
-  document.getElementById("nMapel").innerHTML = mapel.map(m => `<option value="${m.id}" ${m.id===selected?"selected":""}>${escapeHtml(m.nama)}</option>`).join("");
-}
-window.openNilaiForm = function(nilai) {
-  document.getElementById("nilaiForm").reset();
-  populateSiswaSelectNilai(nilai ? nilai.siswaId : "");
-  populateMapelSelectNilai(nilai ? nilai.mapelId : "");
-  if (nilai) {
-    document.getElementById("nilaiModalTitle").textContent = "Edit Nilai";
-    document.getElementById("nilaiId").value = nilai.id;
-    document.getElementById("nJenis").value = nilai.jenis;
-    document.getElementById("nNilai").value = nilai.nilai;
-  } else {
-    document.getElementById("nilaiModalTitle").textContent = "Input Nilai";
-    document.getElementById("nilaiId").value = "";
-  }
-  openModal("nilaiModal");
-};
-window.editNilai = function(id) { const n = DB.findById("nilai", id); if (n) openNilaiForm(n); };
-window.deleteNilai = function(id) {
-  confirmDialog({
-    title: "Hapus Data Nilai?", message: "Data nilai ini akan dihapus permanen.", confirmText: "Ya, Hapus",
-    onConfirm: () => { DB.remove("nilai", id); showToast("Data nilai berhasil dihapus.", "success"); renderNilai(); },
-  });
-};
-
-/* ---- ABSENSI ---- */
-const ABSEN_STATUS_OPTIONS = ["Hadir", "Sakit", "Izin", "Alpa"];
-const ABSEN_STATUS_BADGE = { Hadir: "badge-green", Sakit: "badge-orange", Izin: "badge-blue", Alpa: "badge-red" };
-
-function renderAbsensi() {
-  const content = document.getElementById("pageContent");
-  const canEdit = session.role === "admin" || session.role === "guru";
-  if (!window.absensiState) {
-    const kelasList = DB.get("kelas");
-    window.absensiState = { selectedDate: new Date().toISOString().slice(0,10), selectedKelas: kelasList[0] ? kelasList[0].nama : "" };
-  }
-  const state = window.absensiState;
-
-  function renderAdminGuruView() {
-    const kelasList = DB.get("kelas");
-    const siswaKelas = DB.get("siswa").filter(s => s.kelas === state.selectedKelas && s.status === "Aktif");
-    const absensiData = DB.get("absensi");
-
-    const rows = siswaKelas.map(s => {
-      const record = absensiData.find(a => a.siswaId === s.id && a.tanggal === state.selectedDate);
-      const currentStatus = record ? record.status : "Hadir";
-      return `
-        <tr>
-          <td><div class="table-avatar"><div class="avatar">${initials(s.nama)}</div><div><div class="tname">${escapeHtml(s.nama)}</div><div class="tsub">NIS: ${escapeHtml(s.nis)}</div></div></div></td>
-          <td><div class="row-actions">${ABSEN_STATUS_OPTIONS.map(st => `<button type="button" class="btn btn-sm ${st===currentStatus ? 'btn-blue' : 'btn-outline'}" onclick="setAbsen('${s.id}','${st}')">${st}</button>`).join("")}</div></td>
-        </tr>`;
-    }).join("");
-
-    const summary = ABSEN_STATUS_OPTIONS.map(st => {
-      const count = siswaKelas.filter(s => {
-        const rec = absensiData.find(a => a.siswaId === s.id && a.tanggal === state.selectedDate);
-        return (rec ? rec.status : "Hadir") === st;
-      }).length;
-      return { st, count };
-    });
-
-    return `
-      <div class="toolbar">
-        <div class="toolbar-left">
-          <select class="select-filter" id="filterKelas">${kelasList.map(k => `<option value="${escapeHtml(k.nama)}" ${state.selectedKelas===k.nama?"selected":""}>${escapeHtml(k.nama)}</option>`).join("")}</select>
-          <input type="date" id="filterTanggal" class="select-filter" value="${state.selectedDate}" />
-        </div>
-      </div>
-      <div class="stat-grid" style="margin-bottom:16px;">
-        ${summary.map(({st,count}) => `
-          <div class="stat-card"><div class="stat-info"><div class="label">${st}</div><div class="value">${count}</div></div>
-          <div class="stat-icon ${st==='Hadir'?'icon-green':st==='Sakit'?'icon-orange':st==='Izin'?'icon-blue':'icon-red'}">${st==='Hadir'?'✅':st==='Sakit'?'🤒':st==='Izin'?'✉️':'❌'}</div></div>`).join("")}
-      </div>
-      <div class="table-wrap">
-        ${siswaKelas.length === 0 ? `<div class="empty-state"><div class="ic">🗓️</div>Tidak ada siswa aktif di kelas ini.</div>` : `<table><thead><tr><th>Nama Siswa</th><th>Status Kehadiran</th></tr></thead><tbody>${rows}</tbody></table>`}
-      </div>`;
-  }
-
-  function renderSiswaView() {
-    const myAbsen = DB.get("absensi").filter(a => a.siswaId === session.linkedId).sort((a,b)=>b.tanggal.localeCompare(a.tanggal));
-    const total = myAbsen.length;
-    const summary = ABSEN_STATUS_OPTIONS.map(st => ({ st, count: myAbsen.filter(a=>a.status===st).length }));
-    const rows = myAbsen.map(a => `<tr><td>${formatDate(a.tanggal)}</td><td><span class="badge ${ABSEN_STATUS_BADGE[a.status]}">${a.status}</span></td></tr>`).join("");
-    return `
-      <div class="stat-grid" style="margin-bottom:16px;">
-        ${summary.map(({st,count}) => `
-          <div class="stat-card"><div class="stat-info"><div class="label">${st}</div><div class="value">${count}</div><div class="delta">${total ? Math.round((count/total)*100) : 0}% dari total</div></div>
-          <div class="stat-icon ${st==='Hadir'?'icon-green':st==='Sakit'?'icon-orange':st==='Izin'?'icon-blue':'icon-red'}">${st==='Hadir'?'✅':st==='Sakit'?'🤒':st==='Izin'?'✉️':'❌'}</div></div>`).join("")}
-      </div>
-      <div class="table-wrap">${total === 0 ? `<div class="empty-state"><div class="ic">🗓️</div>Belum ada riwayat absensi.</div>` : `<table><thead><tr><th>Tanggal</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table>`}</div>`;
-  }
-
-  if (canEdit) {
-    content.innerHTML = renderAdminGuruView();
-    document.getElementById("filterKelas").addEventListener("change", (e) => { state.selectedKelas = e.target.value; renderAbsensi(); });
-    document.getElementById("filterTanggal").addEventListener("change", (e) => { state.selectedDate = e.target.value; renderAbsensi(); });
-  } else {
-    content.innerHTML = renderSiswaView();
-  }
-}
-
-window.setAbsen = function(siswaId, status) {
-  const state = window.absensiState;
-  const absensiData = DB.get("absensi");
-  const existing = absensiData.find(a => a.siswaId === siswaId && a.tanggal === state.selectedDate);
-  if (existing) DB.update("absensi", existing.id, { status });
-  else DB.insert("absensi", { siswaId, tanggal: state.selectedDate, status });
-  showToast(`Kehadiran diperbarui: ${status}`, "success");
-  renderAbsensi();
 };
 
 /* ---- GURU MATA PELAJARAN ---- */
@@ -2991,24 +2881,6 @@ document.getElementById("kelasForm").addEventListener("submit", (e) => {
 
   closeModal("kelasModal");
   renderKelas();
-});
-
-document.getElementById("nilaiForm").addEventListener("submit", (e) => {
-  e.preventDefault();
-  const id = document.getElementById("nilaiId").value;
-  const settings = DB.get("settings");
-  const payload = {
-    siswaId: document.getElementById("nSiswa").value,
-    mapelId: document.getElementById("nMapel").value,
-    jenis: document.getElementById("nJenis").value,
-    nilai: Number(document.getElementById("nNilai").value),
-    semester: settings.semester,
-    tahunAjaran: settings.tahunAjaran,
-  };
-  if (id) { DB.update("nilai", id, payload); showToast("Nilai berhasil diperbarui.", "success"); }
-  else { DB.insert("nilai", payload); showToast("Nilai berhasil ditambahkan.", "success"); }
-  closeModal("nilaiModal");
-  renderNilai();
 });
 
 document.getElementById("jurnalForm").addEventListener("submit", (e) => {
