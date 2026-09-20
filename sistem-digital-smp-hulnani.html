@@ -177,6 +177,23 @@ input, select, textarea { font-family: inherit; }
   background: linear-gradient(135deg, var(--blue-600), #3a4bd6); color: #fff;
   box-shadow: 0 4px 14px rgba(47, 92, 243, 0.35);
 }
+.sidebar-group { margin-bottom: 2px; }
+.sidebar-group-toggle {
+  width: 100%; display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 10px;
+  font-size: 13.5px; color: #c3caea; background: transparent; border: none; text-align: left;
+  transition: background .15s, color .15s;
+}
+.sidebar-group-toggle:hover { background: rgba(255,255,255,0.06); color: #fff; }
+.sidebar-group-toggle.has-active { background: rgba(75,116,255,0.15); color: #fff; }
+.sidebar-group-toggle .ic { width: 20px; text-align: center; font-size: 15px; }
+.sidebar-group-toggle .chevron { margin-left: auto; font-size: 11px; transition: transform .2s; }
+.sidebar-group-toggle.open .chevron { transform: rotate(180deg); }
+.sidebar-group-items {
+  max-height: 0; overflow: hidden; transition: max-height .22s ease;
+  padding-left: 14px; border-left: 1px solid rgba(255,255,255,0.08); margin-left: 22px;
+}
+.sidebar-group-items.open { max-height: 480px; }
+.sidebar-group-items a { font-size: 13px; padding: 8px 12px; }
 .sidebar-footer { padding: 14px 20px 20px; border-top: 1px solid rgba(255,255,255,0.08); }
 .sidebar-user { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
 .avatar {
@@ -894,16 +911,18 @@ function confirmDialog({ title, message, confirmText = "Ya", cancelText = "Batal
    --------------------------------------------------------- */
 const NAV_ITEMS = [
   { key: "dashboard", icon: "📊", label: "Dashboard", roles: ["admin", "guru", "siswa"] },
-  { key: "siswa", icon: "🧑‍🎓", label: "Data Siswa", roles: ["admin", "guru"] },
-  { key: "guru", icon: "🧑‍🏫", label: "Data Guru", roles: ["admin"] },
-  { key: "tendik", icon: "🧰", label: "Tenaga Pendidik", roles: ["admin"] },
-  { key: "kelas", icon: "🏫", label: "Data Kelas", roles: ["admin"] },
+  { key: "siswa", icon: "🧑‍🎓", label: "Data Siswa", roles: ["admin", "guru"], adminGroup: true },
+  { key: "guru", icon: "🧑‍🏫", label: "Data Guru", roles: ["admin"], adminGroup: true },
+  { key: "tendik", icon: "🧰", label: "Tenaga Pendidik", roles: ["admin"], adminGroup: true },
+  { key: "kelas", icon: "🏫", label: "Data Kelas", roles: ["admin"], adminGroup: true },
   { key: "nilai", icon: "📝", label: "Nilai Akademik", roles: ["admin", "guru", "siswa"] },
   { key: "absensi", icon: "🗓️", label: "Absensi", roles: ["admin", "guru", "siswa"] },
-  { key: "pengumuman", icon: "📣", label: "Pengumuman", roles: ["admin", "guru", "siswa"] },
+  { key: "pengumuman", icon: "📣", label: "Pengumuman", roles: ["admin", "guru", "siswa"], adminGroup: true },
   { key: "profil", icon: "👤", label: "Profil Saya", roles: ["guru", "siswa"] },
-  { key: "pengaturan", icon: "⚙️", label: "Pengaturan", roles: ["admin"] },
+  { key: "pengaturan", icon: "⚙️", label: "Pengaturan", roles: ["admin"], adminGroup: true },
 ];
+/* Untuk peran Admin, menu bertanda `adminGroup: true` dikelompokkan
+   sebagai submenu di bawah menu induk "Administrator" pada sidebar. */
 const ROLE_LABEL = { admin: "Administrator", guru: "Guru", siswa: "Siswa" };
 const PAGE_META = {
   dashboard: { title: "Dashboard", sub: "Ringkasan data sekolah hari ini" },
@@ -922,17 +941,59 @@ let session = null; // current logged-in session
 
 function goRoute(key) { window.location.hash = "#" + key; }
 
+function linkHtml(item) {
+  return `<a href="#${item.key}" data-key="${item.key}"><span class="ic">${item.icon}</span><span>${item.label}</span></a>`;
+}
+
 function buildSidebarNav() {
   const nav = document.getElementById("sidebarNav");
   const items = NAV_ITEMS.filter((item) => item.roles.includes(session.role));
-  nav.innerHTML = `<div class="sidebar-section-title">Menu Utama</div>` +
-    items.map((item) => `<a href="#${item.key}" data-key="${item.key}"><span class="ic">${item.icon}</span><span>${item.label}</span></a>`).join("");
+
+  if (session.role === "admin") {
+    // Kelompokkan menu bertanda adminGroup di bawah menu induk "Administrator"
+    const topItems = items.filter((item) => !item.adminGroup);
+    const groupItems = items.filter((item) => item.adminGroup);
+    const currentKey = (window.location.hash || "#dashboard").replace("#", "");
+    const groupHasActive = groupItems.some((item) => item.key === currentKey);
+
+    nav.innerHTML = `<div class="sidebar-section-title">Menu Utama</div>` +
+      topItems.map(linkHtml).join("") +
+      `<div class="sidebar-group">
+        <button type="button" class="sidebar-group-toggle ${groupHasActive ? "has-active" : ""} ${groupHasActive ? "open" : ""}" id="adminGroupToggle">
+          <span class="ic">🛠️</span><span>Administrator</span><span class="chevron">▾</span>
+        </button>
+        <div class="sidebar-group-items ${groupHasActive ? "open" : ""}" id="adminGroupItems">
+          ${groupItems.map(linkHtml).join("")}
+        </div>
+      </div>`;
+
+    const toggleBtn = document.getElementById("adminGroupToggle");
+    const groupBox = document.getElementById("adminGroupItems");
+    toggleBtn.addEventListener("click", () => {
+      toggleBtn.classList.toggle("open");
+      groupBox.classList.toggle("open");
+    });
+  } else {
+    nav.innerHTML = `<div class="sidebar-section-title">Menu Utama</div>` + items.map(linkHtml).join("");
+  }
 }
 
 function setActiveNav(key) {
   document.querySelectorAll(".sidebar-nav a").forEach((a) => {
     a.classList.toggle("active", a.dataset.key === key);
   });
+  // pastikan submenu Administrator otomatis terbuka bila salah satu itemnya aktif
+  const groupToggle = document.getElementById("adminGroupToggle");
+  const groupItems = document.getElementById("adminGroupItems");
+  if (groupToggle && groupItems) {
+    const navItem = NAV_ITEMS.find((n) => n.key === key);
+    const isGroupActive = !!(navItem && navItem.adminGroup);
+    groupToggle.classList.toggle("has-active", isGroupActive);
+    if (isGroupActive) {
+      groupToggle.classList.add("open");
+      groupItems.classList.add("open");
+    }
+  }
 }
 
 function router() {

@@ -18,15 +18,18 @@ Cukup buka file `sistem-digital-smp-hulnani.html` langsung dengan browser (doubl
 
 - **Login multi-peran**: Admin, Guru, dan Siswa (sesi disimpan di `sessionStorage`).
 - **Dashboard** ringkasan data sesuai peran pengguna.
-- **Data Siswa** — CRUD lengkap, pencarian, filter kelas, dan detail siswa.
-- **Data Guru** — CRUD lengkap (khusus Admin).
-- **Tenaga Pendidik** — CRUD data tenaga kependidikan non-guru (TU, Pustakawan, Laboran, Satpam, Petugas Kebersihan, dll) (khusus Admin).
-- **Data Kelas** — kelola rombongan belajar & wali kelas (khusus Admin).
+- **Menu "Administrator"** (khusus Admin) — menu induk collapsible di sidebar yang mengelompokkan submenu manajemen data:
+  - **Data Siswa** — CRUD lengkap, pencarian, filter kelas, dan detail siswa.
+  - **Data Guru** — CRUD lengkap.
+  - **Tenaga Pendidik** — CRUD data tenaga kependidikan non-guru (TU, Pustakawan, Laboran, Satpam, Petugas Kebersihan, dll).
+  - **Data Kelas** — kelola rombongan belajar & wali kelas.
+  - **Pengumuman** — buat & kelola pengumuman sekolah.
+  - **Pengaturan** — profil sekolah, ekspor/impor data (backup JSON), reset data.
 - **Nilai Akademik** — input nilai (Admin/Guru), lihat nilai (Siswa), otomatis badge lulus/tidak KKM.
 - **Absensi** — input kehadiran harian per kelas (Admin/Guru), riwayat kehadiran (Siswa).
-- **Pengumuman** — buat & kelola pengumuman sekolah.
 - **Profil Saya** — Guru/Siswa dapat melihat data pribadi & ganti kata sandi.
-- **Pengaturan** — profil sekolah, ekspor/impor data (backup JSON), reset data (khusus Admin).
+
+> Catatan: untuk peran **Guru** dan **Siswa**, menu **Data Siswa** dan **Pengumuman** tetap tampil langsung di sidebar (tidak dikelompokkan), karena bukan bagian dari menu Administrator.
 
 ## Arsitektur
 
