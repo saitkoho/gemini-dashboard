@@ -1,6 +1,18 @@
 # Sistem Digital SMP Hulnani
 
-Sistem informasi administrasi sekolah berbasis web statis (HTML, CSS, JavaScript) untuk **SMP Hulnani**. Tidak memerlukan server/backend — seluruh data disimpan di browser menggunakan `localStorage`, sehingga bisa langsung dibuka dari file `index.html` atau di-hosting sebagai situs statis.
+Sistem informasi administrasi sekolah **dalam satu file HTML tunggal** (`sistem-digital-smp-hulnani.html`). Tidak memerlukan server, build tools, maupun instalasi apa pun — cukup buka filenya langsung di browser. Seluruh HTML, CSS, dan JavaScript sudah digabung menjadi satu file, dan data disimpan di `localStorage` browser.
+
+## Cara Menjalankan
+
+Cukup buka file `sistem-digital-smp-hulnani.html` langsung dengan browser (double click, atau `File > Open`). Bisa juga di-hosting sebagai file statis di mana saja (GitHub Pages, Netlify, dsb) karena tidak ada dependensi eksternal.
+
+## Akun Demo
+
+| Peran  | Username | Password  |
+|--------|----------|-----------|
+| Admin  | admin    | admin123  |
+| Guru   | guru     | guru123   |
+| Siswa  | siswa    | siswa123  |
 
 ## Fitur
 
@@ -15,46 +27,21 @@ Sistem informasi administrasi sekolah berbasis web statis (HTML, CSS, JavaScript
 - **Profil Saya** — Guru/Siswa dapat melihat data pribadi & ganti kata sandi.
 - **Pengaturan** — profil sekolah, ekspor/impor data (backup JSON), reset data (khusus Admin).
 
-## Akun Demo
+## Arsitektur
 
-| Peran  | Username | Password  |
-|--------|----------|-----------|
-| Admin  | admin    | admin123  |
-| Guru   | guru     | guru123   |
-| Siswa  | siswa    | siswa123  |
+File tunggal ini berbentuk **SPA (Single Page Application)** dengan hash-routing (`#dashboard`, `#siswa`, `#guru`, dst) — berpindah menu tidak memuat ulang halaman, cukup berganti konten di dalam satu dokumen. Struktur kode di dalamnya:
 
-## Cara Menjalankan
-
-Karena ini website statis, cukup buka `index.html` langsung di browser, atau jalankan server statis sederhana, misalnya:
-
-```bash
-python3 -m http.server 8080
-```
-
-Lalu buka `http://localhost:8080` di browser.
-
-## Struktur Proyek
-
-```
-├── index.html          # Halaman login
-├── dashboard.html       # Dashboard utama
-├── siswa.html           # Data siswa
-├── guru.html             # Data guru
-├── kelas.html            # Data kelas
-├── nilai.html            # Nilai akademik
-├── absensi.html          # Absensi harian
-├── pengumuman.html       # Pengumuman sekolah
-├── profil.html           # Profil pengguna (guru/siswa)
-├── pengaturan.html       # Pengaturan sistem (admin)
-└── assets/
-    ├── css/style.css     # Stylesheet utama
-    └── js/
-        ├── db.js         # Data layer (localStorage)
-        ├── auth.js       # Autentikasi & sesi
-        └── app.js        # Layout shell, toast, modal, util
-```
+1. **`<style>`** — seluruh stylesheet (layout login, sidebar, topbar, tabel, modal, responsif).
+2. **Markup HTML** — layar login, shell aplikasi (sidebar + topbar + area konten), dan semua modal form (siswa, guru, kelas, nilai, pengumuman).
+3. **`<script>`** — dibagi menjadi beberapa bagian:
+   - **Data Layer (`DB`)** — akses `localStorage`, data contoh awal (seed), fungsi CRUD generik.
+   - **Auth** — login/logout berbasis `sessionStorage`.
+   - **Util** — helper format tanggal, escape HTML, toast, dialog konfirmasi, dsb.
+   - **Router** — hash-based routing dengan pembatasan akses per peran.
+   - **Route renderers** — fungsi render untuk tiap menu (dashboard, siswa, guru, kelas, nilai, absensi, pengumuman, profil, pengaturan).
 
 ## Catatan
 
-- Data tersimpan di `localStorage` browser (per perangkat/browser). Gunakan fitur **Ekspor/Impor Data** di halaman Pengaturan untuk mencadangkan atau memindahkan data.
+- Data tersimpan di `localStorage` browser (per perangkat/browser). Gunakan fitur **Ekspor/Impor Data** di halaman Pengaturan untuk mencadangkan atau memindahkan data antar perangkat/browser.
 - Untuk mengembalikan ke data contoh awal, gunakan tombol **Reset ke Data Awal** di halaman Pengaturan.
+- Karena berbentuk single file, cukup bagikan file `.html` ini untuk memindahkan seluruh aplikasi (tanpa data) ke perangkat lain.
