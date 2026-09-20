@@ -627,6 +627,61 @@ tbody tr:hover { background: #fafbff; }
   </div>
 </div>
 
+<!-- MODAL: JURNAL MENGAJAR -->
+<div class="modal-backdrop" id="jurnalModal">
+  <div class="modal modal-lg">
+    <div class="modal-head">
+      <h3 id="jurnalModalTitle">Tambah Jurnal Mengajar</h3>
+      <button class="modal-close" onclick="closeModal('jurnalModal')">✕</button>
+    </div>
+    <form id="jurnalForm">
+      <div class="modal-body">
+        <input type="hidden" id="jurnalId" />
+        <div class="form-grid">
+          <div class="field"><label>Guru Mata Pelajaran</label><select id="jmGuru" required></select></div>
+          <div class="field"><label>Tanggal</label><input type="date" id="jmTanggal" required /></div>
+          <div class="field"><label>Kelas</label><select id="jmKelas" required></select></div>
+          <div class="field"><label>Mata Pelajaran</label><select id="jmMapel" required></select></div>
+          <div class="field"><label>Jam Ke</label><input type="text" id="jmJamKe" placeholder="Contoh: 1-2" required /></div>
+          <div class="field full"><label>Materi yang Diajarkan</label><textarea id="jmMateri" rows="3" placeholder="Uraikan materi pembelajaran" required></textarea></div>
+          <div class="field full"><label>Catatan</label><textarea id="jmCatatan" rows="3" placeholder="Contoh: aktivitas kelas, tindak lanjut, atau catatan pembelajaran"></textarea></div>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button type="button" class="btn btn-outline" onclick="closeModal('jurnalModal')">Batal</button>
+        <button type="submit" class="btn btn-blue">💾 Simpan Jurnal</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- MODAL: INPUT NILAI GURU MAPEL -->
+<div class="modal-backdrop" id="inputNilaiModal">
+  <div class="modal">
+    <div class="modal-head">
+      <h3 id="inputNilaiModalTitle">Input Nilai</h3>
+      <button class="modal-close" onclick="closeModal('inputNilaiModal')">✕</button>
+    </div>
+    <form id="inputNilaiForm">
+      <div class="modal-body">
+        <input type="hidden" id="inNilaiId" />
+        <div class="form-grid">
+          <div class="field"><label>Guru Mata Pelajaran</label><select id="inGuru" required></select></div>
+          <div class="field"><label>Kelas</label><select id="inKelas" required></select></div>
+          <div class="field full"><label>Siswa</label><select id="inSiswa" required></select></div>
+          <div class="field"><label>Mata Pelajaran</label><select id="inMapel" required></select></div>
+          <div class="field"><label>Jenis Penilaian</label><select id="inJenis" required><option value="Tugas">Tugas</option><option value="UH1">Ulangan Harian 1</option><option value="UH2">Ulangan Harian 2</option><option value="PTS">PTS</option><option value="PAS">PAS</option></select></div>
+          <div class="field"><label>Nilai (0-100)</label><input type="number" id="inNilai" min="0" max="100" required /></div>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button type="button" class="btn btn-outline" onclick="closeModal('inputNilaiModal')">Batal</button>
+        <button type="submit" class="btn btn-blue">💾 Simpan Nilai</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <!-- MODAL: PENGUMUMAN -->
 <div class="modal-backdrop" id="pengumumanModal">
   <div class="modal">
@@ -757,6 +812,21 @@ const DB = (function () {
         { id: "a7", siswaId: "s3", tanggal: todayOffset(-1), status: "Hadir" },
         { id: "a8", siswaId: "s4", tanggal: todayOffset(-1), status: "Izin" },
       ],
+      jurnalMengajar: [
+        { id: "jm1", guruId: "g1", kelas: "VII-A", mapelId: "m1", tanggal: todayOffset(-1), jamKe: "1-2", materi: "Operasi Bilangan Bulat", catatan: "Siswa aktif berdiskusi dan mengerjakan latihan." },
+        { id: "jm2", guruId: "g2", kelas: "VII-B", mapelId: "m2", tanggal: todayOffset(-2), jamKe: "3-4", materi: "Teks Deskripsi", catatan: "Pembelajaran berjalan lancar." },
+      ],
+      absensiMapel: [
+        { id: "am1", guruId: "g1", siswaId: "s1", mapelId: "m1", tanggal: todayOffset(0), status: "Hadir" },
+        { id: "am2", guruId: "g1", siswaId: "s2", mapelId: "m1", tanggal: todayOffset(0), status: "Hadir" },
+        { id: "am3", guruId: "g1", siswaId: "s3", mapelId: "m1", tanggal: todayOffset(0), status: "Izin" },
+        { id: "am4", guruId: "g1", siswaId: "s4", mapelId: "m1", tanggal: todayOffset(0), status: "Hadir" },
+      ],
+      nilaiMapel: [
+        { id: "nm1", guruId: "g1", siswaId: "s1", mapelId: "m1", jenis: "Tugas", nilai: 90, semester: "Ganjil", tahunAjaran: "2026/2027" },
+        { id: "nm2", guruId: "g1", siswaId: "s2", mapelId: "m1", jenis: "Tugas", nilai: 82, semester: "Ganjil", tahunAjaran: "2026/2027" },
+        { id: "nm3", guruId: "g1", siswaId: "s3", mapelId: "m1", jenis: "UH1", nilai: 78, semester: "Ganjil", tahunAjaran: "2026/2027" },
+      ],
       pengumuman: [
         { id: "p1", judul: "Libur Semester Ganjil", kategori: "Umum", isi: "Diberitahukan kepada seluruh siswa/i bahwa libur semester ganjil akan dimulai tanggal 20 Desember 2026. Kegiatan belajar mengajar akan kembali aktif pada 5 Januari 2027.", tanggal: todayOffset(-2), penulis: "Administrator" },
         { id: "p2", judul: "Jadwal Ujian Tengah Semester", kategori: "Akademik", isi: "Ujian Tengah Semester (UTS) Ganjil akan dilaksanakan pada tanggal 6-10 Oktober 2026. Siswa diharapkan mempersiapkan diri dengan baik.", tanggal: todayOffset(-5), penulis: "Administrator" },
@@ -772,7 +842,17 @@ const DB = (function () {
       localStorage.setItem(DB_KEY, JSON.stringify(seeded));
       return seeded;
     }
-    try { return JSON.parse(raw); }
+    try {
+      const data = JSON.parse(raw);
+      // Migrasi ringan agar koleksi baru tersedia juga pada data pengguna lama.
+      const defaults = seedData();
+      let changed = false;
+      Object.keys(defaults).forEach((key) => {
+        if (data[key] === undefined) { data[key] = defaults[key]; changed = true; }
+      });
+      if (changed) localStorage.setItem(DB_KEY, JSON.stringify(data));
+      return data;
+    }
     catch (e) {
       const seeded = seedData();
       localStorage.setItem(DB_KEY, JSON.stringify(seeded));
@@ -913,6 +993,9 @@ const NAV_ITEMS = [
   { key: "kelas", icon: "🏫", label: "Data Kelas", roles: ["admin"], adminGroup: true },
   { key: "nilai", icon: "📝", label: "Nilai Akademik", roles: ["admin", "guru", "siswa"] },
   { key: "absensi", icon: "🗓️", label: "Absensi", roles: ["admin", "guru", "siswa"] },
+  { key: "jurnal-mengajar", icon: "📚", label: "Jurnal Mengajar", roles: ["admin", "guru"], guruMapelGroup: true },
+  { key: "absensi-siswa", icon: "✅", label: "Absensi Siswa", roles: ["admin", "guru"], guruMapelGroup: true },
+  { key: "input-nilai", icon: "✍️", label: "Input Nilai", roles: ["admin", "guru"], guruMapelGroup: true },
   { key: "pengumuman", icon: "📣", label: "Pengumuman", roles: ["admin", "guru", "siswa"], adminGroup: true },
   { key: "profil", icon: "👤", label: "Profil Saya", roles: ["guru", "siswa"] },
   { key: "pengaturan", icon: "⚙️", label: "Pengaturan", roles: ["admin"], adminGroup: true },
@@ -928,6 +1011,9 @@ const PAGE_META = {
   kelas: { title: "Data Kelas", sub: "Kelola rombongan belajar (rombel) sekolah" },
   nilai: { title: "Nilai Akademik", sub: "Kelola nilai akademik siswa per mata pelajaran" },
   absensi: { title: "Absensi", sub: "Catat dan kelola kehadiran siswa harian" },
+  "jurnal-mengajar": { title: "Jurnal Mengajar", sub: "Catat materi dan aktivitas pembelajaran setiap pertemuan" },
+  "absensi-siswa": { title: "Absensi Siswa", sub: "Catat kehadiran siswa per mata pelajaran" },
+  "input-nilai": { title: "Input Nilai", sub: "Input dan kelola nilai siswa pada mata pelajaran yang diampu" },
   pengumuman: { title: "Pengumuman", sub: "Info dan pengumuman terbaru dari sekolah" },
   profil: { title: "Profil Saya", sub: "Informasi akun dan data pribadi Anda" },
   pengaturan: { title: "Pengaturan", sub: "Kelola profil sekolah dan konfigurasi sistem" },
@@ -941,55 +1027,68 @@ function linkHtml(item) {
   return `<a href="#${item.key}" data-key="${item.key}"><span class="ic">${item.icon}</span><span>${item.label}</span></a>`;
 }
 
+function sidebarGroupHtml({ id, label, icon, items, currentKey }) {
+  const isActive = items.some((item) => item.key === currentKey);
+  return `<div class="sidebar-group">
+    <button type="button" class="sidebar-group-toggle ${isActive ? "has-active open" : ""}" id="${id}Toggle">
+      <span class="ic">${icon}</span><span>${label}</span><span class="chevron">▾</span>
+    </button>
+    <div class="sidebar-group-items ${isActive ? "open" : ""}" id="${id}Items">
+      ${items.map(linkHtml).join("")}
+    </div>
+  </div>`;
+}
+
+function bindSidebarGroup(id) {
+  const toggle = document.getElementById(`${id}Toggle`);
+  const items = document.getElementById(`${id}Items`);
+  if (!toggle || !items) return;
+  toggle.addEventListener("click", () => {
+    toggle.classList.toggle("open");
+    items.classList.toggle("open");
+  });
+}
+
 function buildSidebarNav() {
   const nav = document.getElementById("sidebarNav");
   const items = NAV_ITEMS.filter((item) => item.roles.includes(session.role));
+  const currentKey = (window.location.hash || "#dashboard").replace("#", "");
+  // Menu Administrator hanya dikelompokkan saat role Admin; untuk Guru/Siswa
+  // item yang sama tetap tampil langsung seperti struktur sidebar sebelumnya.
+  const regularItems = items.filter((item) => !item.guruMapelGroup && (session.role !== "admin" || !item.adminGroup));
+  const guruMapelItems = items.filter((item) => item.guruMapelGroup);
+  const adminItems = session.role === "admin" ? items.filter((item) => item.adminGroup) : [];
 
-  if (session.role === "admin") {
-    // Kelompokkan menu bertanda adminGroup di bawah menu induk "Administrator"
-    const topItems = items.filter((item) => !item.adminGroup);
-    const groupItems = items.filter((item) => item.adminGroup);
-    const currentKey = (window.location.hash || "#dashboard").replace("#", "");
-    const groupHasActive = groupItems.some((item) => item.key === currentKey);
-
-    nav.innerHTML = `<div class="sidebar-section-title">Menu Utama</div>` +
-      topItems.map(linkHtml).join("") +
-      `<div class="sidebar-group">
-        <button type="button" class="sidebar-group-toggle ${groupHasActive ? "has-active" : ""} ${groupHasActive ? "open" : ""}" id="adminGroupToggle">
-          <span class="ic">🛠️</span><span>Administrator</span><span class="chevron">▾</span>
-        </button>
-        <div class="sidebar-group-items ${groupHasActive ? "open" : ""}" id="adminGroupItems">
-          ${groupItems.map(linkHtml).join("")}
-        </div>
-      </div>`;
-
-    const toggleBtn = document.getElementById("adminGroupToggle");
-    const groupBox = document.getElementById("adminGroupItems");
-    toggleBtn.addEventListener("click", () => {
-      toggleBtn.classList.toggle("open");
-      groupBox.classList.toggle("open");
-    });
-  } else {
-    nav.innerHTML = `<div class="sidebar-section-title">Menu Utama</div>` + items.map(linkHtml).join("");
+  let navHtml = `<div class="sidebar-section-title">Menu Utama</div>` + regularItems.map(linkHtml).join("");
+  if (guruMapelItems.length) {
+    navHtml += sidebarGroupHtml({ id: "guruMapelGroup", label: "Guru Mata Pelajaran", icon: "🧑‍🏫", items: guruMapelItems, currentKey });
   }
+  if (session.role === "admin" && adminItems.length) {
+    navHtml += sidebarGroupHtml({ id: "adminGroup", label: "Administrator", icon: "🛠️", items: adminItems, currentKey });
+  }
+  nav.innerHTML = navHtml;
+  bindSidebarGroup("guruMapelGroup");
+  bindSidebarGroup("adminGroup");
 }
 
 function setActiveNav(key) {
   document.querySelectorAll(".sidebar-nav a").forEach((a) => {
     a.classList.toggle("active", a.dataset.key === key);
   });
-  // pastikan submenu Administrator otomatis terbuka bila salah satu itemnya aktif
-  const groupToggle = document.getElementById("adminGroupToggle");
-  const groupItems = document.getElementById("adminGroupItems");
-  if (groupToggle && groupItems) {
-    const navItem = NAV_ITEMS.find((n) => n.key === key);
-    const isGroupActive = !!(navItem && navItem.adminGroup);
-    groupToggle.classList.toggle("has-active", isGroupActive);
-    if (isGroupActive) {
-      groupToggle.classList.add("open");
-      groupItems.classList.add("open");
+  const navItem = NAV_ITEMS.find((n) => n.key === key);
+  [
+    { id: "adminGroup", active: !!(navItem && navItem.adminGroup) },
+    { id: "guruMapelGroup", active: !!(navItem && navItem.guruMapelGroup) },
+  ].forEach(({ id, active }) => {
+    const toggle = document.getElementById(`${id}Toggle`);
+    const items = document.getElementById(`${id}Items`);
+    if (!toggle || !items) return;
+    toggle.classList.toggle("has-active", active);
+    if (active) {
+      toggle.classList.add("open");
+      items.classList.add("open");
     }
-  }
+  });
 }
 
 function router() {
@@ -1021,6 +1120,9 @@ const ROUTES = {
   kelas: renderKelas,
   nilai: renderNilai,
   absensi: renderAbsensi,
+  "jurnal-mengajar": renderJurnalMengajar,
+  "absensi-siswa": renderAbsensiSiswaMapel,
+  "input-nilai": renderInputNilaiMapel,
   pengumuman: renderPengumuman,
   profil: renderProfil,
   pengaturan: renderPengaturan,
@@ -1797,6 +1899,274 @@ window.setAbsen = function(siswaId, status) {
   renderAbsensi();
 };
 
+/* ---- GURU MATA PELAJARAN ---- */
+const MAPEL_ABSEN_STATUS_OPTIONS = ["Hadir", "Sakit", "Izin", "Alpa"];
+
+function getGuruMapelId(guruId) {
+  const guru = DB.findById("guru", guruId);
+  const mapel = guru ? DB.get("mapel").find((m) => m.nama === guru.mapel) : null;
+  return mapel ? mapel.id : "";
+}
+function getGuruDefaultKelas(guruId) {
+  const guru = DB.findById("guru", guruId);
+  const kelas = DB.get("kelas");
+  return guru && kelas.some((k) => k.nama === guru.waliKelas) ? guru.waliKelas : (kelas[0] ? kelas[0].nama : "");
+}
+function activeGuruList() { return DB.get("guru").filter((g) => g.status === "Aktif"); }
+function guruOptions(selected) {
+  return activeGuruList().map((g) => `<option value="${g.id}" ${g.id === selected ? "selected" : ""}>${escapeHtml(g.nama)} — ${escapeHtml(g.mapel || "Belum diatur")}</option>`).join("");
+}
+function kelasOptions(selected) {
+  return DB.get("kelas").map((k) => `<option value="${escapeHtml(k.nama)}" ${k.nama === selected ? "selected" : ""}>${escapeHtml(k.nama)}</option>`).join("");
+}
+function mapelOptions(selected, guruId, restrictToGuru) {
+  const assignedMapelId = getGuruMapelId(guruId);
+  const allMapel = DB.get("mapel");
+  const list = restrictToGuru && assignedMapelId ? allMapel.filter((m) => m.id === assignedMapelId) : allMapel;
+  return list.map((m) => `<option value="${m.id}" ${m.id === selected ? "selected" : ""}>${escapeHtml(m.nama)} (KKM ${m.kkm})</option>`).join("");
+}
+function canManageGuruMapelRecord(record) {
+  return session.role === "admin" || (session.role === "guru" && record && record.guruId === session.linkedId);
+}
+
+/* ---- JURNAL MENGAJAR ---- */
+function renderJurnalMengajar() {
+  const content = document.getElementById("pageContent");
+  if (!window.jurnalMengajarState) window.jurnalMengajarState = { searchTerm: "", kelas: "", mapelId: "", guruId: "" };
+  const state = window.jurnalMengajarState;
+  const isAdmin = session.role === "admin";
+  let data = DB.get("jurnalMengajar");
+  const guru = DB.get("guru");
+  const mapel = DB.get("mapel");
+
+  if (!isAdmin) data = data.filter((j) => j.guruId === session.linkedId);
+  if (state.kelas) data = data.filter((j) => j.kelas === state.kelas);
+  if (state.mapelId) data = data.filter((j) => j.mapelId === state.mapelId);
+  if (isAdmin && state.guruId) data = data.filter((j) => j.guruId === state.guruId);
+  if (state.searchTerm) {
+    const query = state.searchTerm.toLowerCase();
+    data = data.filter((j) => (j.materi || "").toLowerCase().includes(query) || (j.catatan || "").toLowerCase().includes(query));
+  }
+  data = [...data].sort((a, b) => b.tanggal.localeCompare(a.tanggal));
+
+  const toolbar = `
+    <div class="toolbar">
+      <div class="toolbar-left">
+        <div class="search-box"><span class="ic">🔍</span><input type="text" id="jurnalSearch" placeholder="Cari materi atau catatan..." value="${escapeHtml(state.searchTerm)}" /></div>
+        <select class="select-filter" id="jurnalKelas"><option value="">Semua Kelas</option>${kelasOptions(state.kelas)}</select>
+        <select class="select-filter" id="jurnalMapel"><option value="">Semua Mapel</option>${mapelOptions(state.mapelId, "", false)}</select>
+        ${isAdmin ? `<select class="select-filter" id="jurnalGuru"><option value="">Semua Guru</option>${guruOptions(state.guruId)}</select>` : ""}
+      </div>
+      <button class="btn btn-blue" id="btnAddJurnal">➕ Tambah Jurnal</button>
+    </div>`;
+  const rows = data.map((j) => {
+    const pengajar = guru.find((g) => g.id === j.guruId) || {};
+    const mataPelajaran = mapel.find((m) => m.id === j.mapelId) || {};
+    const canManage = canManageGuruMapelRecord(j);
+    return `<tr>
+      <td>${formatDate(j.tanggal)}</td>
+      <td><div class="tname">${escapeHtml(pengajar.nama || "-")}</div><div class="tsub">${escapeHtml(j.kelas)}</div></td>
+      <td>${escapeHtml(mataPelajaran.nama || "-")}</td>
+      <td><span class="badge badge-gray">Jam ${escapeHtml(j.jamKe)}</span></td>
+      <td><div class="tname">${escapeHtml(j.materi)}</div>${j.catatan ? `<div class="tsub">${escapeHtml(j.catatan)}</div>` : ""}</td>
+      <td>${canManage ? `<div class="row-actions"><button class="action-btn" title="Edit" onclick="editJurnal('${j.id}')">✏️</button><button class="action-btn danger" title="Hapus" onclick="deleteJurnal('${j.id}')">🗑️</button></div>` : "-"}</td>
+    </tr>`;
+  }).join("");
+  const table = data.length ? `<div class="table-wrap"><table><thead><tr><th>Tanggal</th><th>Guru / Kelas</th><th>Mapel</th><th>Jam Ke</th><th>Materi & Catatan</th><th>Aksi</th></tr></thead><tbody>${rows}</tbody></table></div>` : `<div class="table-wrap"><div class="empty-state"><div class="ic">📚</div>Belum ada jurnal mengajar yang sesuai.</div></div>`;
+  content.innerHTML = toolbar + table;
+
+  document.getElementById("jurnalSearch").addEventListener("input", debounce((event) => {
+    state.searchTerm = event.target.value;
+    renderJurnalMengajar();
+    const input = document.getElementById("jurnalSearch");
+    input.focus(); input.setSelectionRange(input.value.length, input.value.length);
+  }, 300));
+  document.getElementById("jurnalKelas").addEventListener("change", (event) => { state.kelas = event.target.value; renderJurnalMengajar(); });
+  document.getElementById("jurnalMapel").addEventListener("change", (event) => { state.mapelId = event.target.value; renderJurnalMengajar(); });
+  const guruFilter = document.getElementById("jurnalGuru");
+  if (guruFilter) guruFilter.addEventListener("change", (event) => { state.guruId = event.target.value; renderJurnalMengajar(); });
+  document.getElementById("btnAddJurnal").addEventListener("click", () => openJurnalForm());
+}
+
+function populateJurnalForm(record) {
+  const isGuru = session.role === "guru";
+  const guruId = isGuru ? session.linkedId : (record ? record.guruId : (activeGuruList()[0] || {}).id || "");
+  const defaultMapel = getGuruMapelId(guruId);
+  document.getElementById("jmGuru").innerHTML = guruOptions(guruId);
+  document.getElementById("jmGuru").disabled = isGuru;
+  document.getElementById("jmKelas").innerHTML = kelasOptions(record ? record.kelas : getGuruDefaultKelas(guruId));
+  document.getElementById("jmMapel").innerHTML = mapelOptions(record ? record.mapelId : defaultMapel, guruId, isGuru);
+  document.getElementById("jmGuru").onchange = () => {
+    const selectedGuru = document.getElementById("jmGuru").value;
+    const suggestedMapel = getGuruMapelId(selectedGuru);
+    document.getElementById("jmMapel").innerHTML = mapelOptions(suggestedMapel, selectedGuru, false);
+    document.getElementById("jmKelas").value = getGuruDefaultKelas(selectedGuru);
+  };
+}
+window.openJurnalForm = function(record) {
+  document.getElementById("jurnalForm").reset();
+  if (record && !canManageGuruMapelRecord(record)) { showToast("Anda tidak berhak mengubah jurnal ini.", "error"); return; }
+  populateJurnalForm(record);
+  document.getElementById("jurnalId").value = record ? record.id : "";
+  document.getElementById("jurnalModalTitle").textContent = record ? "Edit Jurnal Mengajar" : "Tambah Jurnal Mengajar";
+  document.getElementById("jmTanggal").value = record ? record.tanggal : new Date().toISOString().slice(0, 10);
+  document.getElementById("jmJamKe").value = record ? record.jamKe : "";
+  document.getElementById("jmMateri").value = record ? record.materi : "";
+  document.getElementById("jmCatatan").value = record ? record.catatan : "";
+  openModal("jurnalModal");
+};
+window.editJurnal = function(id) { const record = DB.findById("jurnalMengajar", id); if (record) openJurnalForm(record); };
+window.deleteJurnal = function(id) {
+  const record = DB.findById("jurnalMengajar", id);
+  if (!canManageGuruMapelRecord(record)) { showToast("Anda tidak berhak menghapus jurnal ini.", "error"); return; }
+  confirmDialog({ title: "Hapus Jurnal Mengajar?", message: "Jurnal ini akan dihapus permanen.", confirmText: "Ya, Hapus", onConfirm: () => {
+    DB.remove("jurnalMengajar", id); showToast("Jurnal mengajar berhasil dihapus.", "success"); renderJurnalMengajar();
+  }});
+};
+
+/* ---- ABSENSI SISWA PER MATA PELAJARAN ---- */
+function getAbsensiMapelState() {
+  if (!window.absensiMapelState) {
+    const guruId = session.role === "guru" ? session.linkedId : ((activeGuruList()[0] || {}).id || "");
+    window.absensiMapelState = { guruId, kelas: getGuruDefaultKelas(guruId), mapelId: getGuruMapelId(guruId), tanggal: new Date().toISOString().slice(0, 10) };
+  }
+  if (session.role === "guru") window.absensiMapelState.guruId = session.linkedId;
+  return window.absensiMapelState;
+}
+function renderAbsensiSiswaMapel() {
+  const content = document.getElementById("pageContent");
+  const state = getAbsensiMapelState();
+  const isAdmin = session.role === "admin";
+  const siswaKelas = DB.get("siswa").filter((s) => s.kelas === state.kelas && s.status === "Aktif");
+  const absensi = DB.get("absensiMapel");
+  const currentGuru = DB.findById("guru", state.guruId) || {};
+  const currentMapel = DB.findById("mapel", state.mapelId) || {};
+  const summary = MAPEL_ABSEN_STATUS_OPTIONS.map((status) => ({ status, count: siswaKelas.filter((s) => {
+    const record = absensi.find((a) => a.guruId === state.guruId && a.siswaId === s.id && a.mapelId === state.mapelId && a.tanggal === state.tanggal);
+    return (record ? record.status : "Hadir") === status;
+  }).length }));
+  const rows = siswaKelas.map((s) => {
+    const record = absensi.find((a) => a.guruId === state.guruId && a.siswaId === s.id && a.mapelId === state.mapelId && a.tanggal === state.tanggal);
+    const activeStatus = record ? record.status : "Hadir";
+    return `<tr><td><div class="table-avatar"><div class="avatar">${initials(s.nama)}</div><div><div class="tname">${escapeHtml(s.nama)}</div><div class="tsub">NIS: ${escapeHtml(s.nis)}</div></div></div></td><td><div class="row-actions">${MAPEL_ABSEN_STATUS_OPTIONS.map((status) => `<button type="button" class="btn btn-sm ${activeStatus === status ? "btn-blue" : "btn-outline"}" onclick="setAbsenMapel('${s.id}', '${status}')">${status}</button>`).join("")}</div></td></tr>`;
+  }).join("");
+  content.innerHTML = `
+    <div class="toolbar"><div class="toolbar-left">
+      ${isAdmin ? `<select class="select-filter" id="amGuru">${guruOptions(state.guruId)}</select>` : `<span class="badge badge-blue">${escapeHtml(currentGuru.nama || "Guru Mata Pelajaran")}</span>`}
+      <select class="select-filter" id="amKelas">${kelasOptions(state.kelas)}</select>
+      <select class="select-filter" id="amMapel">${mapelOptions(state.mapelId, state.guruId, !isAdmin)}</select>
+      <input type="date" class="select-filter" id="amTanggal" value="${state.tanggal}" />
+    </div></div>
+    <div class="card" style="margin-bottom:16px; padding:14px 18px;"><span class="text-muted" style="font-size:13px;">Absensi <strong>${escapeHtml(currentMapel.nama || "mata pelajaran")}</strong> • ${escapeHtml(state.kelas)} • ${formatDate(state.tanggal)}</span></div>
+    <div class="stat-grid" style="margin-bottom:16px;">${summary.map(({ status, count }) => `<div class="stat-card"><div class="stat-info"><div class="label">${status}</div><div class="value">${count}</div></div><div class="stat-icon ${status === "Hadir" ? "icon-green" : status === "Sakit" ? "icon-orange" : status === "Izin" ? "icon-blue" : "icon-red"}">${status === "Hadir" ? "✅" : status === "Sakit" ? "🤒" : status === "Izin" ? "✉️" : "❌"}</div></div>`).join("")}</div>
+    <div class="table-wrap">${siswaKelas.length ? `<table><thead><tr><th>Nama Siswa</th><th>Status Kehadiran</th></tr></thead><tbody>${rows}</tbody></table>` : `<div class="empty-state"><div class="ic">🗓️</div>Tidak ada siswa aktif pada kelas ini.</div>`}</div>`;
+  const guruSelect = document.getElementById("amGuru");
+  if (guruSelect) guruSelect.addEventListener("change", (event) => { state.guruId = event.target.value; state.mapelId = getGuruMapelId(state.guruId); state.kelas = getGuruDefaultKelas(state.guruId); renderAbsensiSiswaMapel(); });
+  document.getElementById("amKelas").addEventListener("change", (event) => { state.kelas = event.target.value; renderAbsensiSiswaMapel(); });
+  document.getElementById("amMapel").addEventListener("change", (event) => { state.mapelId = event.target.value; renderAbsensiSiswaMapel(); });
+  document.getElementById("amTanggal").addEventListener("change", (event) => { state.tanggal = event.target.value; renderAbsensiSiswaMapel(); });
+}
+window.setAbsenMapel = function(siswaId, status) {
+  const state = getAbsensiMapelState();
+  if (!state.guruId || !state.mapelId) { showToast("Pilih guru dan mata pelajaran terlebih dahulu.", "error"); return; }
+  const records = DB.get("absensiMapel");
+  const existing = records.find((a) => a.guruId === state.guruId && a.siswaId === siswaId && a.mapelId === state.mapelId && a.tanggal === state.tanggal);
+  if (existing) DB.update("absensiMapel", existing.id, { status });
+  else DB.insert("absensiMapel", { guruId: state.guruId, siswaId, mapelId: state.mapelId, tanggal: state.tanggal, status });
+  showToast(`Kehadiran diperbarui: ${status}`, "success");
+  renderAbsensiSiswaMapel();
+};
+
+/* ---- INPUT NILAI GURU MATA PELAJARAN ---- */
+function getInputNilaiState() {
+  if (!window.inputNilaiMapelState) {
+    const guruId = session.role === "guru" ? session.linkedId : "";
+    window.inputNilaiMapelState = { guruId, kelas: "", mapelId: guruId ? getGuruMapelId(guruId) : "", searchTerm: "" };
+  }
+  if (session.role === "guru") {
+    window.inputNilaiMapelState.guruId = session.linkedId;
+    if (!window.inputNilaiMapelState.mapelId) window.inputNilaiMapelState.mapelId = getGuruMapelId(session.linkedId);
+  }
+  return window.inputNilaiMapelState;
+}
+function renderInputNilaiMapel() {
+  const content = document.getElementById("pageContent");
+  const state = getInputNilaiState();
+  const isAdmin = session.role === "admin";
+  const siswa = DB.get("siswa");
+  const guru = DB.get("guru");
+  const mapel = DB.get("mapel");
+  let data = DB.get("nilaiMapel");
+  if (!isAdmin) data = data.filter((n) => n.guruId === session.linkedId);
+  else if (state.guruId) data = data.filter((n) => n.guruId === state.guruId);
+  if (state.kelas) data = data.filter((n) => (siswa.find((s) => s.id === n.siswaId) || {}).kelas === state.kelas);
+  if (state.mapelId) data = data.filter((n) => n.mapelId === state.mapelId);
+  if (state.searchTerm) {
+    const query = state.searchTerm.toLowerCase();
+    data = data.filter((n) => ((siswa.find((s) => s.id === n.siswaId) || {}).nama || "").toLowerCase().includes(query));
+  }
+  data = [...data].sort((a, b) => ((siswa.find((s) => s.id === a.siswaId) || {}).nama || "").localeCompare((siswa.find((s) => s.id === b.siswaId) || {}).nama || ""));
+  const rows = data.map((n) => {
+    const murid = siswa.find((s) => s.id === n.siswaId) || {};
+    const pengajar = guru.find((g) => g.id === n.guruId) || {};
+    const pelajaran = mapel.find((m) => m.id === n.mapelId) || { kkm: 75 };
+    const canManage = canManageGuruMapelRecord(n);
+    return `<tr><td><div class="table-avatar"><div class="avatar">${initials(murid.nama)}</div><div><div class="tname">${escapeHtml(murid.nama || "-")}</div><div class="tsub">${escapeHtml(murid.kelas || "-")}</div></div></div></td><td>${escapeHtml(pengajar.nama || "-")}</td><td>${escapeHtml(pelajaran.nama || "-")}</td><td><span class="badge badge-gray">${escapeHtml(n.jenis)}</span></td><td>${n.nilai >= pelajaran.kkm ? `<span class="badge badge-green">${n.nilai}</span>` : `<span class="badge badge-red">${n.nilai}</span>`}</td><td>${escapeHtml(n.semester)} ${escapeHtml(n.tahunAjaran)}</td><td>${canManage ? `<div class="row-actions"><button class="action-btn" title="Edit" onclick="editInputNilai('${n.id}')">✏️</button><button class="action-btn danger" title="Hapus" onclick="deleteInputNilai('${n.id}')">🗑️</button></div>` : "-"}</td></tr>`;
+  }).join("");
+  content.innerHTML = `
+    <div class="toolbar"><div class="toolbar-left">
+      <div class="search-box"><span class="ic">🔍</span><input type="text" id="inSearch" placeholder="Cari nama siswa..." value="${escapeHtml(state.searchTerm)}" /></div>
+      ${isAdmin ? `<select class="select-filter" id="inFilterGuru"><option value="">Semua Guru</option>${guruOptions(state.guruId)}</select>` : ""}
+      <select class="select-filter" id="inFilterKelas"><option value="">Semua Kelas</option>${kelasOptions(state.kelas)}</select>
+      <select class="select-filter" id="inFilterMapel"><option value="">Semua Mapel</option>${mapelOptions(state.mapelId, state.guruId, !isAdmin)}</select>
+    </div><button class="btn btn-blue" id="btnAddInputNilai">➕ Input Nilai</button></div>
+    ${data.length ? `<div class="table-wrap"><table><thead><tr><th>Siswa</th><th>Guru</th><th>Mapel</th><th>Jenis</th><th>Nilai</th><th>Periode</th><th>Aksi</th></tr></thead><tbody>${rows}</tbody></table></div>` : `<div class="table-wrap"><div class="empty-state"><div class="ic">📝</div>Belum ada nilai yang sesuai.</div></div>`}`;
+  document.getElementById("inSearch").addEventListener("input", debounce((event) => { state.searchTerm = event.target.value; renderInputNilaiMapel(); const input = document.getElementById("inSearch"); input.focus(); input.setSelectionRange(input.value.length, input.value.length); }, 300));
+  const guruFilter = document.getElementById("inFilterGuru");
+  if (guruFilter) guruFilter.addEventListener("change", (event) => { state.guruId = event.target.value; state.mapelId = getGuruMapelId(state.guruId); renderInputNilaiMapel(); });
+  document.getElementById("inFilterKelas").addEventListener("change", (event) => { state.kelas = event.target.value; renderInputNilaiMapel(); });
+  document.getElementById("inFilterMapel").addEventListener("change", (event) => { state.mapelId = event.target.value; renderInputNilaiMapel(); });
+  document.getElementById("btnAddInputNilai").addEventListener("click", () => openInputNilaiForm());
+}
+function populateInputNilaiSiswa(kelas, selected) {
+  const siswa = DB.get("siswa").filter((s) => s.status === "Aktif" && (!kelas || s.kelas === kelas));
+  document.getElementById("inSiswa").innerHTML = siswa.map((s) => `<option value="${s.id}" ${s.id === selected ? "selected" : ""}>${escapeHtml(s.nama)} (${escapeHtml(s.kelas)})</option>`).join("") || "<option value=\"\">Tidak ada siswa aktif</option>";
+}
+function populateInputNilaiForm(record) {
+  const isGuru = session.role === "guru";
+  const recordStudent = record ? DB.findById("siswa", record.siswaId) : null;
+  const guruId = isGuru ? session.linkedId : (record ? record.guruId : ((activeGuruList()[0] || {}).id || ""));
+  const kelas = recordStudent ? recordStudent.kelas : getGuruDefaultKelas(guruId);
+  document.getElementById("inGuru").innerHTML = guruOptions(guruId);
+  document.getElementById("inGuru").disabled = isGuru;
+  document.getElementById("inKelas").innerHTML = kelasOptions(kelas);
+  populateInputNilaiSiswa(kelas, record ? record.siswaId : "");
+  document.getElementById("inMapel").innerHTML = mapelOptions(record ? record.mapelId : getGuruMapelId(guruId), guruId, isGuru);
+  document.getElementById("inGuru").onchange = () => {
+    const selectedGuru = document.getElementById("inGuru").value;
+    document.getElementById("inMapel").innerHTML = mapelOptions(getGuruMapelId(selectedGuru), selectedGuru, false);
+  };
+  document.getElementById("inKelas").onchange = () => populateInputNilaiSiswa(document.getElementById("inKelas").value, "");
+}
+window.openInputNilaiForm = function(record) {
+  document.getElementById("inputNilaiForm").reset();
+  if (record && !canManageGuruMapelRecord(record)) { showToast("Anda tidak berhak mengubah nilai ini.", "error"); return; }
+  populateInputNilaiForm(record);
+  document.getElementById("inNilaiId").value = record ? record.id : "";
+  document.getElementById("inputNilaiModalTitle").textContent = record ? "Edit Nilai" : "Input Nilai";
+  document.getElementById("inJenis").value = record ? record.jenis : "Tugas";
+  document.getElementById("inNilai").value = record ? record.nilai : "";
+  openModal("inputNilaiModal");
+};
+window.editInputNilai = function(id) { const record = DB.findById("nilaiMapel", id); if (record) openInputNilaiForm(record); };
+window.deleteInputNilai = function(id) {
+  const record = DB.findById("nilaiMapel", id);
+  if (!canManageGuruMapelRecord(record)) { showToast("Anda tidak berhak menghapus nilai ini.", "error"); return; }
+  confirmDialog({ title: "Hapus Nilai?", message: "Data nilai ini akan dihapus permanen.", confirmText: "Ya, Hapus", onConfirm: () => {
+    DB.remove("nilaiMapel", id); showToast("Nilai berhasil dihapus.", "success"); renderInputNilaiMapel();
+  }});
+};
+
 /* ---- PENGUMUMAN ---- */
 const PENGUMUMAN_KATEGORI_BADGE = { Umum: "badge-gray", Akademik: "badge-blue", Kegiatan: "badge-green", Penting: "badge-red" };
 
@@ -2136,6 +2506,53 @@ document.getElementById("nilaiForm").addEventListener("submit", (e) => {
   else { DB.insert("nilai", payload); showToast("Nilai berhasil ditambahkan.", "success"); }
   closeModal("nilaiModal");
   renderNilai();
+});
+
+document.getElementById("jurnalForm").addEventListener("submit", (e) => {
+  e.preventDefault();
+  const id = document.getElementById("jurnalId").value;
+  const existing = id ? DB.findById("jurnalMengajar", id) : null;
+  if (existing && !canManageGuruMapelRecord(existing)) { showToast("Anda tidak berhak mengubah jurnal ini.", "error"); return; }
+  const guruId = session.role === "guru" ? session.linkedId : document.getElementById("jmGuru").value;
+  const assignedMapelId = getGuruMapelId(guruId);
+  const payload = {
+    guruId,
+    kelas: document.getElementById("jmKelas").value,
+    mapelId: session.role === "guru" && assignedMapelId ? assignedMapelId : document.getElementById("jmMapel").value,
+    tanggal: document.getElementById("jmTanggal").value,
+    jamKe: document.getElementById("jmJamKe").value.trim(),
+    materi: document.getElementById("jmMateri").value.trim(),
+    catatan: document.getElementById("jmCatatan").value.trim(),
+  };
+  if (!payload.guruId || !payload.mapelId) { showToast("Guru dan mata pelajaran wajib dipilih.", "error"); return; }
+  if (id) { DB.update("jurnalMengajar", id, payload); showToast("Jurnal mengajar berhasil diperbarui.", "success"); }
+  else { DB.insert("jurnalMengajar", payload); showToast("Jurnal mengajar berhasil ditambahkan.", "success"); }
+  closeModal("jurnalModal");
+  renderJurnalMengajar();
+});
+
+document.getElementById("inputNilaiForm").addEventListener("submit", (e) => {
+  e.preventDefault();
+  const id = document.getElementById("inNilaiId").value;
+  const existing = id ? DB.findById("nilaiMapel", id) : null;
+  if (existing && !canManageGuruMapelRecord(existing)) { showToast("Anda tidak berhak mengubah nilai ini.", "error"); return; }
+  const guruId = session.role === "guru" ? session.linkedId : document.getElementById("inGuru").value;
+  const assignedMapelId = getGuruMapelId(guruId);
+  const settings = DB.get("settings");
+  const payload = {
+    guruId,
+    siswaId: document.getElementById("inSiswa").value,
+    mapelId: session.role === "guru" && assignedMapelId ? assignedMapelId : document.getElementById("inMapel").value,
+    jenis: document.getElementById("inJenis").value,
+    nilai: Number(document.getElementById("inNilai").value),
+    semester: settings.semester,
+    tahunAjaran: settings.tahunAjaran,
+  };
+  if (!payload.guruId || !payload.siswaId || !payload.mapelId) { showToast("Guru, siswa, dan mata pelajaran wajib dipilih.", "error"); return; }
+  if (id) { DB.update("nilaiMapel", id, payload); showToast("Nilai berhasil diperbarui.", "success"); }
+  else { DB.insert("nilaiMapel", payload); showToast("Nilai berhasil ditambahkan.", "success"); }
+  closeModal("inputNilaiModal");
+  renderInputNilaiMapel();
 });
 
 document.getElementById("pengumumanForm").addEventListener("submit", (e) => {

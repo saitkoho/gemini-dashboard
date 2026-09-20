@@ -27,9 +27,14 @@ Cukup buka file `sistem-digital-smp-hulnani.html` langsung dengan browser (doubl
   - **Pengaturan** — profil sekolah, ekspor/impor data (backup JSON), reset data.
 - **Nilai Akademik** — input nilai (Admin/Guru), lihat nilai (Siswa), otomatis badge lulus/tidak KKM.
 - **Absensi** — input kehadiran harian per kelas (Admin/Guru), riwayat kehadiran (Siswa).
+- **Menu "Guru Mata Pelajaran"** (Admin dan Guru) — menu induk collapsible untuk kebutuhan pembelajaran per mapel:
+  - **Jurnal Mengajar** — catat tanggal, kelas, mata pelajaran, jam ke, materi yang diajarkan, serta catatan pembelajaran.
+  - **Absensi Siswa** — catat kehadiran siswa per kelas, tanggal, guru, dan mata pelajaran.
+  - **Input Nilai** — input nilai per siswa, lengkap dengan jenis penilaian dan indikator KKM.
+  - Admin dapat mengakses seluruh data; Guru hanya mengelola jurnal, absensi, dan nilai miliknya sendiri pada mapel yang diampu.
 - **Profil Saya** — Guru/Siswa dapat melihat data pribadi & ganti kata sandi.
 
-> Catatan: untuk peran **Guru** dan **Siswa**, menu **Data Siswa** dan **Pengumuman** tetap tampil langsung di sidebar (tidak dikelompokkan), karena bukan bagian dari menu Administrator.
+> Catatan: menu **Guru Mata Pelajaran** tersedia untuk Admin dan Guru. Halaman khusus ini terpisah dari menu umum **Absensi** dan **Nilai Akademik** yang sudah ada. Untuk peran **Guru** dan **Siswa**, menu **Data Siswa** dan **Pengumuman** tetap tampil langsung di sidebar (tidak dikelompokkan), karena bukan bagian dari menu Administrator.
 
 ## Arsitektur
 
