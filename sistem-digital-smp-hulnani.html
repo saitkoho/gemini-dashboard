@@ -733,11 +733,11 @@ const DB = (function () {
         { id: "ta1", tahunAjaran: "2026/2027", aktif: true, dibuatPada: todayOffset(0) },
       ],
       users: [
-        { id: "u1", username: "admin", password: "admin123", role: "admin", name: "Administrator", linkedId: null },
-        { id: "u2", username: "guru", password: "guru123", role: "guru", name: "Budi Santoso, S.Pd", linkedId: "g1" },
-        { id: "u3", username: "siswa", password: "siswa123", role: "siswa", name: "Nisa Amalia", linkedId: "s1" },
-        { id: "u4", username: "tendik", password: "tendik123", role: "tendik", name: "Herman Wijaya, S.E", linkedId: "t1" },
-        { id: "u5", username: "kepsek", password: "kepsek123", role: "kepsek", name: "Drs. Yohanes Bria, M.Pd", linkedId: "ks1" },
+        { id: "u1", username: "admin", password: "admin123", role: "admin", name: "Administrator", linkedId: null, status: "Aktif" },
+        { id: "u2", username: "guru", password: "guru123", role: "guru", name: "Budi Santoso, S.Pd", linkedId: "g1", status: "Aktif" },
+        { id: "u3", username: "siswa", password: "siswa123", role: "siswa", name: "Nisa Amalia", linkedId: "s1", status: "Aktif" },
+        { id: "u4", username: "tendik", password: "tendik123", role: "tendik", name: "Herman Wijaya, S.E", linkedId: "t1", status: "Aktif" },
+        { id: "u5", username: "kepsek", password: "kepsek123", role: "kepsek", name: "Drs. Yohanes Bria, M.Pd", linkedId: "ks1", status: "Aktif" },
       ],
       kepsek: [
         { id: "ks1", nip: "196904151994121001", nama: "Drs. Yohanes Bria, M.Pd", jk: "L", telepon: "081234400001", email: "kepsek@smphulnani.sch.id", alamat: "Kupang", status: "Aktif" },
@@ -900,6 +900,10 @@ const DB = (function () {
           if (demoUser) { data.users.push(demoUser); changed = true; }
         }
       });
+      // Akun versi sebelumnya dianggap aktif agar perilaku login lama tetap sama.
+      (data.users || []).forEach((user) => {
+        if (!user.status) { user.status = "Aktif"; changed = true; }
+      });
       // Nilai dari menu lama dipindahkan satu kali ke input nilai mata pelajaran,
       // sehingga riwayat pengguna lama tetap terbaca pada alur kerja yang baru.
       data.migrations = data.migrations || {};
@@ -993,6 +997,7 @@ const Auth = (function () {
       (u) => u.username.toLowerCase() === String(username).toLowerCase() && u.password === password
     );
     if (!found) return { ok: false, message: "Username atau kata sandi salah." };
+    if (found.status === "Nonaktif") return { ok: false, message: "Akun ini sedang dinonaktifkan. Hubungi Administrator." };
     const session = { id: found.id, username: found.username, role: found.role, name: found.name, linkedId: found.linkedId };
     sessionStorage.setItem(AUTH_KEY, JSON.stringify(session));
     return { ok: true, session };
@@ -1000,7 +1005,13 @@ const Auth = (function () {
   function current() {
     const raw = sessionStorage.getItem(AUTH_KEY);
     if (!raw) return null;
-    try { return JSON.parse(raw); } catch (e) { return null; }
+    try {
+      const stored = JSON.parse(raw);
+      const account = DB.findById("users", stored.id);
+      if (!account || account.status === "Nonaktif") { sessionStorage.removeItem(AUTH_KEY); return null; }
+      // Peran dan tautan terbaru selalu dipakai setelah akun diubah oleh Administrator.
+      return { id: account.id, username: account.username, role: account.role, name: account.name, linkedId: account.linkedId };
+    } catch (e) { return null; }
   }
   function logout() { sessionStorage.removeItem(AUTH_KEY); }
   return { login, current, logout };
@@ -1152,6 +1163,7 @@ const NAV_ITEMS = [
   { key: "siswa", icon: "🧑‍🎓", label: "Data Siswa", roles: ["admin", "guru"], adminGroup: true },
   { key: "guru", icon: "🧑‍🏫", label: "Data Guru", roles: ["admin"], adminGroup: true },
   { key: "tendik", icon: "🧰", label: "Tenaga Pendidik", roles: ["admin"], adminGroup: true },
+  { key: "manajemen-pengguna", icon: "🔐", label: "Manajemen Pengguna", roles: ["admin"], adminGroup: true },
   { key: "kelas", icon: "🏫", label: "Data Kelas", roles: ["admin"], adminGroup: true },
 
   { key: "jurnal-mengajar", icon: "📚", label: "Jurnal Mengajar", roles: ["admin", "guru"], guruMapelGroup: true },
@@ -1243,6 +1255,7 @@ const PAGE_META = {
   "kepsek-laporan": { title: "Laporan Sekolah", sub: "Laporan ringkas untuk pengambilan keputusan" },
 
   pengumuman: { title: "Pengumuman", sub: "Info dan pengumuman terbaru dari sekolah" },
+  "manajemen-pengguna": { title: "Manajemen Pengguna", sub: "Atur akun login, peran, dan kata sandi pengguna" },
   profil: { title: "Profil Saya", sub: "Informasi akun dan data pribadi Anda" },
   pengaturan: { title: "Pengaturan", sub: "Kelola profil sekolah dan konfigurasi sistem" },
 };
@@ -1341,6 +1354,7 @@ const ROUTES = {
   siswa: renderSiswa,
   guru: renderGuru,
   tendik: renderTendik,
+  "manajemen-pengguna": renderManajemenPengguna,
   kelas: renderKelas,
   "jurnal-mengajar": renderJurnalMengajar,
   "nilai-saya": renderNilaiSaya,
@@ -2110,6 +2124,7 @@ window.viewSiswa = function(id) {
 };
 window.deleteSiswa = function(id) {
   const s = DB.findById("siswa", id);
+  if (DB.get("users").some((user) => user.role === "siswa" && user.linkedId === id)) { showToast("Hapus akun login siswa ini terlebih dahulu melalui Manajemen Pengguna.", "error"); return; }
   confirmDialog({
     title: "Hapus Data Siswa?",
     message: `Data siswa "${s ? s.nama : ""}" akan dihapus permanen dan tidak dapat dikembalikan.`,
@@ -2222,6 +2237,7 @@ window.openGuruForm = function(guru) {
 window.editGuru = function(id) { const g = DB.findById("guru", id); if (g) openGuruForm(g); };
 window.deleteGuru = function(id) {
   const g = DB.findById("guru", id);
+  if (DB.get("users").some((user) => user.role === "guru" && user.linkedId === id)) { showToast("Hapus akun login guru ini terlebih dahulu melalui Manajemen Pengguna.", "error"); return; }
   confirmDialog({
     title: "Hapus Data Guru?",
     message: `Data guru "${g ? g.nama : ""}" akan dihapus permanen.`,
@@ -2331,6 +2347,7 @@ window.openTendikForm = function(tendik) {
 window.editTendik = function(id) { const t = DB.findById("tendik", id); if (t) openTendikForm(t); };
 window.deleteTendik = function(id) {
   const t = DB.findById("tendik", id);
+  if (DB.get("users").some((user) => user.role === "tendik" && user.linkedId === id)) { showToast("Hapus akun login tenaga pendidik ini terlebih dahulu melalui Manajemen Pengguna.", "error"); return; }
   confirmDialog({
     title: "Hapus Data Tenaga Pendidik?",
     message: `Data "${t ? t.nama : ""}" akan dihapus permanen.`,
@@ -2847,11 +2864,206 @@ function renderProfil() {
   }
 }
 
+/* ---- MANAJEMEN PENGGUNA & HAK AKSES (admin) ---- */
+const MANAGEABLE_ROLES = ["admin", "guru", "tendik", "kepsek", "siswa"];
+const USER_ROLE_SOURCES = { guru: "guru", tendik: "tendik", kepsek: "kepsek", siswa: "siswa" };
+
+function userStatusBadge(status) {
+  return `<span class="badge ${status === "Nonaktif" ? "badge-red" : "badge-green"}">${escapeHtml(status || "Aktif")}</span>`;
+}
+function userSourceRecord(user) {
+  const collection = USER_ROLE_SOURCES[user.role];
+  return collection && user.linkedId ? DB.findById(collection, user.linkedId) : null;
+}
+function userSourceSummary(user) {
+  if (user.role === "admin") return { type: "Administrator", label: user.name || "Administrator" };
+  const source = userSourceRecord(user);
+  if (!source) return { type: ROLE_LABEL[user.role] || user.role, label: "Data profil tidak tertaut" };
+  const identifier = source.nip ? `NIP: ${source.nip}` : source.nis ? `NIS: ${source.nis}` : "";
+  return { type: ROLE_LABEL[user.role] || user.role, label: source.nama, identifier };
+}
+function userRoleSourceOptions(role, selectedId = "", currentUserId = "") {
+  const collection = USER_ROLE_SOURCES[role];
+  if (!collection) return [];
+  const assignedIds = new Set(DB.get("users").filter((user) => user.id !== currentUserId && user.role === role && user.linkedId).map((user) => user.linkedId));
+  return DB.get(collection)
+    .filter((record) => !assignedIds.has(record.id) || record.id === selectedId)
+    .map((record) => ({ id: record.id, nama: record.nama, identifier: record.nip ? `NIP: ${record.nip}` : record.nis ? `NIS: ${record.nis}` : "" }));
+}
+function activeAdminCount(users = DB.get("users")) {
+  return users.filter((user) => user.role === "admin" && user.status !== "Nonaktif").length;
+}
+function syncCurrentSessionAccount(user) {
+  if (!session || user.id !== session.id) return;
+  session = { id: user.id, username: user.username, role: user.role, name: user.name, linkedId: user.linkedId };
+  sessionStorage.setItem(AUTH_KEY, JSON.stringify(session));
+  const sbName = document.getElementById("sbName"); const tbName = document.getElementById("tbName");
+  if (sbName) sbName.textContent = session.name;
+  if (tbName) tbName.textContent = session.name;
+}
+function syncLinkedUserName(role, linkedId, name) {
+  DB.get("users").filter((user) => user.role === role && user.linkedId === linkedId).forEach((user) => {
+    const updated = DB.update("users", user.id, { name });
+    if (updated) syncCurrentSessionAccount(updated);
+  });
+}
+
+function renderManajemenPengguna() {
+  const content = document.getElementById("pageContent");
+  if (!window.userManagementState) window.userManagementState = { searchTerm: "", role: "", status: "" };
+  const state = window.userManagementState;
+  let users = [...DB.get("users")];
+  if (state.searchTerm) {
+    const query = state.searchTerm.toLowerCase();
+    users = users.filter((user) => {
+      const source = userSourceSummary(user);
+      return [user.name, user.username, source.label, source.identifier, ROLE_LABEL[user.role]].filter(Boolean).some((value) => value.toLowerCase().includes(query));
+    });
+  }
+  if (state.role) users = users.filter((user) => user.role === state.role);
+  if (state.status) users = users.filter((user) => (user.status || "Aktif") === state.status);
+  users.sort((a, b) => a.name.localeCompare(b.name));
+
+  const allUsers = DB.get("users");
+  const roleCount = (role) => allUsers.filter((user) => user.role === role && user.status !== "Nonaktif").length;
+  const rows = users.map((user) => {
+    const source = userSourceSummary(user);
+    const isSelf = session && user.id === session.id;
+    return `<tr>
+      <td><div class="table-avatar"><div class="avatar">${initials(user.name)}</div><div><div class="tname">${escapeHtml(user.name || "-")}${isSelf ? " <span class=\"badge badge-blue\" style=\"margin-left:5px;\">Anda</span>" : ""}</div><div class="tsub">${escapeHtml(source.type)}${source.identifier ? ` • ${escapeHtml(source.identifier)}` : ""}</div></div></div></td>
+      <td><code style="font-size:12px; color:var(--blue-600);">${escapeHtml(user.username)}</code></td>
+      <td>${supportBadge(ROLE_LABEL[user.role] || user.role)}</td>
+      <td><div class="tname">${escapeHtml(source.label || "-")}</div><div class="tsub">${user.linkedId ? "Terhubung ke data profil" : "Akun mandiri"}</div></td>
+      <td>${userStatusBadge(user.status)}</td>
+      <td><div class="row-actions"><button class="action-btn" title="Edit akun & peran" onclick="editUser('${user.id}')">✏️</button><button class="action-btn" title="Atur kata sandi" onclick="resetUserPassword('${user.id}')">🔑</button>${isSelf ? "" : `<button class="action-btn danger" title="Hapus akun" onclick="deleteUser('${user.id}')">🗑️</button>`}</div></td>
+    </tr>`;
+  }).join("");
+
+  content.innerHTML = `
+    <div class="card" style="margin-bottom:16px; padding:14px 18px; border-left:4px solid var(--blue-500);">
+      <div class="text-muted" style="font-size:13px; line-height:1.6;"><b style="color:var(--text-main);">🔐 Kontrol Akses:</b> Buat akun untuk Guru, Tenaga Pendidik, Kepala Sekolah, Siswa, atau Administrator. Setiap akun hanya dapat dihubungkan ke satu data profil dan peran menentukan menu yang dapat diakses.</div>
+    </div>
+    <div class="stat-grid" style="margin-bottom:16px;">
+      <div class="stat-card"><div class="stat-info"><div class="label">Akun Aktif</div><div class="value">${allUsers.filter((user) => user.status !== "Nonaktif").length}</div></div><div class="stat-icon icon-blue">👤</div></div>
+      <div class="stat-card"><div class="stat-info"><div class="label">Guru</div><div class="value">${roleCount("guru")}</div></div><div class="stat-icon icon-purple">🧑‍🏫</div></div>
+      <div class="stat-card"><div class="stat-info"><div class="label">Tenaga Pendidik</div><div class="value">${roleCount("tendik")}</div></div><div class="stat-icon icon-orange">🧰</div></div>
+      <div class="stat-card"><div class="stat-info"><div class="label">Kepala Sekolah</div><div class="value">${roleCount("kepsek")}</div></div><div class="stat-icon icon-green">👔</div></div>
+    </div>
+    <div class="toolbar"><div class="toolbar-left">
+      <div class="search-box"><span class="ic">🔍</span><input id="userSearch" type="text" placeholder="Cari nama, username, NIP, atau NIS..." value="${escapeHtml(state.searchTerm)}" /></div>
+      <select class="select-filter" id="userRoleFilter"><option value="">Semua Peran</option>${MANAGEABLE_ROLES.map((role) => `<option value="${role}" ${state.role === role ? "selected" : ""}>${ROLE_LABEL[role]}</option>`).join("")}</select>
+      <select class="select-filter" id="userStatusFilter"><option value="">Semua Status</option><option value="Aktif" ${state.status === "Aktif" ? "selected" : ""}>Aktif</option><option value="Nonaktif" ${state.status === "Nonaktif" ? "selected" : ""}>Nonaktif</option></select>
+    </div><button class="btn btn-blue" id="btnAddUser">➕ Tambah Akun Login</button></div>
+    <div class="table-wrap">${users.length ? `<table><thead><tr><th>Pengguna</th><th>Username</th><th>Peran</th><th>Data Profil</th><th>Status</th><th>Aksi</th></tr></thead><tbody>${rows}</tbody></table>` : `<div class="empty-state"><div class="ic">🔐</div>Tidak ada akun yang sesuai dengan pencarian.</div>`}</div>`;
+
+  document.getElementById("userSearch").addEventListener("input", debounce((event) => { state.searchTerm = event.target.value; renderManajemenPengguna(); const input = document.getElementById("userSearch"); input.focus(); input.setSelectionRange(input.value.length, input.value.length); }, 300));
+  document.getElementById("userRoleFilter").addEventListener("change", (event) => { state.role = event.target.value; renderManajemenPengguna(); });
+  document.getElementById("userStatusFilter").addEventListener("change", (event) => { state.status = event.target.value; renderManajemenPengguna(); });
+  document.getElementById("btnAddUser").addEventListener("click", () => openUserForm());
+}
+
+window.openUserForm = function(user, passwordOnly = false) {
+  const existing = user || null;
+  const isSelf = !!(existing && session && existing.id === session.id);
+  const backdrop = document.createElement("div");
+  backdrop.className = "modal-backdrop show";
+  backdrop.id = "userFormBackdrop";
+  const role = existing ? existing.role : "guru";
+  const title = passwordOnly ? `Atur Kata Sandi — ${existing.username}` : existing ? "Edit Akun Login" : "Tambah Akun Login";
+  const passwordHelp = existing ? "Kosongkan bila kata sandi tidak diubah." : "Minimal 4 karakter.";
+  const fixedFields = passwordOnly ? "disabled" : "";
+  backdrop.innerHTML = `<div class="modal modal-lg"><div class="modal-head"><h3>${escapeHtml(title)}</h3><button type="button" class="modal-close" id="userFormClose">✕</button></div>
+    <form id="userAccountForm"><div class="modal-body"><input type="hidden" id="accountId" value="${existing ? escapeHtml(existing.id) : ""}" />
+      <div class="form-grid">
+        <div class="field"><label>Peran / Role</label><select id="accountRole" ${fixedFields || (isSelf ? "disabled" : "")}>${MANAGEABLE_ROLES.map((item) => `<option value="${item}" ${role === item ? "selected" : ""}>${ROLE_LABEL[item]}</option>`).join("")}</select></div>
+        <div class="field" id="accountStatusWrap"><label>Status Akun</label><select id="accountStatus" ${fixedFields || (isSelf ? "disabled" : "")}><option value="Aktif" ${(existing ? existing.status : "Aktif") !== "Nonaktif" ? "selected" : ""}>Aktif</option><option value="Nonaktif" ${existing && existing.status === "Nonaktif" ? "selected" : ""}>Nonaktif</option></select></div>
+        <div class="field full" id="accountLinkWrap"><label id="accountLinkLabel">Data Profil</label><select id="accountLinkedId" ${fixedFields}></select><div class="tsub" id="accountLinkHelp" style="margin-top:6px;"></div></div>
+        <div class="field full" id="accountNameWrap"><label>Nama Tampilan Administrator</label><input type="text" id="accountName" value="${escapeHtml(existing ? existing.name : "")}" ${fixedFields} /></div>
+        <div class="field"><label>Username</label><input type="text" id="accountUsername" autocomplete="off" value="${escapeHtml(existing ? existing.username : "")}" placeholder="Contoh: budi.santoso" ${fixedFields} required /></div>
+        <div class="field"><label>${existing ? "Kata Sandi Baru" : "Kata Sandi"}</label><input type="password" id="accountPassword" autocomplete="new-password" minlength="4" ${existing ? "" : "required"} /><div class="tsub" style="margin-top:6px;">${passwordHelp}</div></div>
+      </div></div><div class="modal-foot"><button type="button" class="btn btn-outline" id="userFormCancel">Batal</button><button type="submit" class="btn btn-blue">💾 Simpan Akun</button></div></form></div>`;
+  document.body.appendChild(backdrop);
+
+  const roleSelect = document.getElementById("accountRole");
+  const linkedSelect = document.getElementById("accountLinkedId");
+  const nameInput = document.getElementById("accountName");
+  const linkWrap = document.getElementById("accountLinkWrap");
+  const nameWrap = document.getElementById("accountNameWrap");
+  function refreshLinkedProfiles(preferredId = "") {
+    const selectedRole = roleSelect.value;
+    const collection = USER_ROLE_SOURCES[selectedRole];
+    if (!collection) {
+      linkWrap.classList.add("hidden"); nameWrap.classList.remove("hidden");
+      linkedSelect.required = false; linkedSelect.innerHTML = "";
+      return;
+    }
+    linkWrap.classList.remove("hidden"); nameWrap.classList.add("hidden");
+    linkedSelect.required = true;
+    const options = userRoleSourceOptions(selectedRole, preferredId, existing ? existing.id : "");
+    const selected = options.some((item) => item.id === preferredId) ? preferredId : (options[0] || {}).id || "";
+    linkedSelect.innerHTML = `<option value="">- Pilih ${ROLE_LABEL[selectedRole]} -</option>` + options.map((item) => `<option value="${escapeHtml(item.id)}" ${item.id === selected ? "selected" : ""}>${escapeHtml(item.nama)}${item.identifier ? ` — ${escapeHtml(item.identifier)}` : ""}</option>`).join("");
+    document.getElementById("accountLinkLabel").textContent = `Data ${ROLE_LABEL[selectedRole]}`;
+    document.getElementById("accountLinkHelp").textContent = options.length ? "Satu data profil hanya dapat memiliki satu akun login." : `Belum ada data ${ROLE_LABEL[selectedRole].toLowerCase()} yang dapat ditautkan.`;
+    const chosen = options.find((item) => item.id === linkedSelect.value);
+    if (chosen) nameInput.value = chosen.nama;
+  }
+  refreshLinkedProfiles(existing ? existing.linkedId : "");
+  roleSelect.addEventListener("change", () => refreshLinkedProfiles(""));
+  linkedSelect.addEventListener("change", () => {
+    const options = userRoleSourceOptions(roleSelect.value, linkedSelect.value, existing ? existing.id : "");
+    const chosen = options.find((item) => item.id === linkedSelect.value);
+    if (chosen) nameInput.value = chosen.nama;
+  });
+  const close = () => backdrop.remove();
+  document.getElementById("userFormClose").addEventListener("click", close);
+  document.getElementById("userFormCancel").addEventListener("click", close);
+  backdrop.addEventListener("click", (event) => { if (event.target === backdrop) close(); });
+  document.getElementById("userAccountForm").addEventListener("submit", (event) => {
+    event.preventDefault();
+    const selectedRole = roleSelect.value;
+    const username = document.getElementById("accountUsername").value.trim().toLowerCase();
+    const password = document.getElementById("accountPassword").value;
+    const status = document.getElementById("accountStatus").value;
+    const linkedId = USER_ROLE_SOURCES[selectedRole] ? linkedSelect.value : null;
+    const users = DB.get("users");
+    if (!/^[a-z0-9._-]{3,32}$/.test(username)) { showToast("Username gunakan 3–32 karakter: huruf kecil, angka, titik, garis bawah, atau tanda hubung.", "error"); return; }
+    if ((!existing && password.length < 4) || (password && password.length < 4)) { showToast("Kata sandi minimal 4 karakter.", "error"); return; }
+    if (users.some((item) => item.id !== (existing ? existing.id : "") && item.username.toLowerCase() === username)) { showToast("Username tersebut sudah digunakan.", "error"); return; }
+    let name = document.getElementById("accountName").value.trim();
+    if (USER_ROLE_SOURCES[selectedRole]) {
+      const source = DB.findById(USER_ROLE_SOURCES[selectedRole], linkedId);
+      const alreadyLinked = users.some((item) => item.id !== (existing ? existing.id : "") && item.role === selectedRole && item.linkedId === linkedId);
+      if (!source || !linkedId) { showToast(`Pilih data ${ROLE_LABEL[selectedRole]} yang akan dihubungkan.`, "error"); return; }
+      if (alreadyLinked) { showToast("Data profil tersebut sudah memiliki akun login.", "error"); return; }
+      name = source.nama;
+    }
+    if (!name) { showToast("Nama tampilan wajib diisi.", "error"); return; }
+    if (isSelf && (selectedRole !== existing.role || status !== (existing.status || "Aktif") || linkedId !== (existing.linkedId || null))) { showToast("Untuk keamanan, peran, status, dan tautan akun Anda sendiri tidak dapat diubah dari sesi ini.", "error"); return; }
+    const payload = { username, role: selectedRole, linkedId, name, status };
+    if (password) payload.password = password;
+    const futureUsers = users.map((item) => item.id === (existing ? existing.id : "") ? { ...item, ...payload } : item);
+    if (existing && !futureUsers.some((item) => item.role === "admin" && item.status !== "Nonaktif")) { showToast("Sistem harus memiliki minimal satu Administrator aktif.", "error"); return; }
+    const saved = existing ? DB.update("users", existing.id, payload) : DB.insert("users", payload);
+    syncCurrentSessionAccount(saved);
+    showToast(existing ? "Akun login berhasil diperbarui." : "Akun login berhasil ditambahkan.", "success");
+    close(); renderManajemenPengguna();
+  });
+  if (passwordOnly) document.getElementById("accountPassword").focus();
+};
+window.editUser = function(id) { const user = DB.findById("users", id); if (user) openUserForm(user); };
+window.resetUserPassword = function(id) { const user = DB.findById("users", id); if (user) openUserForm(user, true); };
+window.deleteUser = function(id) {
+  const user = DB.findById("users", id);
+  if (!user) return;
+  if (session && user.id === session.id) { showToast("Akun yang sedang digunakan tidak dapat dihapus.", "error"); return; }
+  if (user.role === "admin" && activeAdminCount() <= 1) { showToast("Minimal harus ada satu Administrator aktif.", "error"); return; }
+  confirmDialog({ title: "Hapus Akun Login?", message: `Akun "${user.username}" akan dihapus. Data profil ${ROLE_LABEL[user.role] || user.role} tidak ikut dihapus.`, confirmText: "Ya, Hapus", onConfirm: () => { DB.remove("users", id); showToast("Akun login berhasil dihapus.", "success"); renderManajemenPengguna(); } });
+};
+
 /* ---- PENGATURAN (admin) ---- */
 function renderPengaturan() {
   const content = document.getElementById("pageContent");
   const s = DB.get("settings");
-  const users = DB.get("users");
   const years = [...DB.get("tahunAjaranList")].sort((a, b) => b.tahunAjaran.localeCompare(a.tahunAjaran));
   const yearOptions = years.map((year) => `<option value="${escapeHtml(year.tahunAjaran)}" ${year.tahunAjaran === s.tahunAjaran ? "selected" : ""}>${escapeHtml(year.tahunAjaran)}${year.aktif ? " (Aktif)" : ""}</option>`).join("");
   const yearRows = years.map((year) => `<tr><td class="tname">${escapeHtml(year.tahunAjaran)}</td><td>${year.aktif ? supportBadge("Aktif") : supportBadge("Arsip")}</td><td>${formatDate(year.dibuatPada)}</td><td>${year.aktif ? "-" : `<button class="btn btn-outline btn-sm" onclick="activateAcademicYear('${year.id}')">Jadikan Aktif</button>`}</td></tr>`).join("");
@@ -2899,11 +3111,8 @@ function renderPengaturan() {
       </div>
     </div>
     <div class="card" style="margin-top:18px;">
-      <div class="card-head"><div><h3>Akun Pengguna</h3><p>Daftar akun login pada sistem</p></div></div>
-      <div class="table-wrap" style="box-shadow:none; border:none;">
-        <table><thead><tr><th>Nama</th><th>Username</th><th>Peran</th></tr></thead>
-        <tbody>${users.map(u => `<tr><td class="tname">${escapeHtml(u.name)}</td><td>${escapeHtml(u.username)}</td><td><span class="badge badge-blue">${u.role}</span></td></tr>`).join("")}</tbody></table>
-      </div>
+      <div class="card-head"><div><h3>Akun & Hak Akses</h3><p>Kelola username, kata sandi, status akun, dan peran pengguna sekolah</p></div><a class="btn btn-outline btn-sm" href="#manajemen-pengguna">🔐 Buka Manajemen Pengguna</a></div>
+      <p class="text-muted" style="font-size:13px; margin:0; line-height:1.6;">Gunakan menu <b>Manajemen Pengguna</b> untuk menghubungkan akun login dengan data Guru, Tenaga Pendidik, Kepala Sekolah, atau Siswa serta menentukan hak aksesnya.</p>
     </div>`;
 
   document.getElementById("settingsForm").addEventListener("submit", (e) => {
@@ -2924,9 +3133,10 @@ function renderPengaturan() {
     DB.setCollection("tahunAjaranList", DB.get("tahunAjaranList").map((year) => ({ ...year, aktif: year.tahunAjaran === tahunAjaranAktif })));
     sessionStorage.setItem(VIEW_PERIOD_KEY, JSON.stringify({ tahunAjaran: tahunAjaranAktif, semester: semesterAktif }));
     const dataKepsek = DB.findById("kepsek", "ks1");
-    if (dataKepsek) DB.update("kepsek", "ks1", { nama: namaKepsek });
-    const akunKepsek = DB.get("users").find((user) => user.role === "kepsek");
-    if (akunKepsek) DB.update("users", akunKepsek.id, { name: namaKepsek });
+    if (dataKepsek) {
+      DB.update("kepsek", "ks1", { nama: namaKepsek });
+      syncLinkedUserName("kepsek", "ks1", namaKepsek);
+    }
     showToast("Profil sekolah berhasil diperbarui.", "success");
     document.getElementById("sbSchoolName").textContent = DB.get("settings").namaSekolah;
     renderPengaturan();
@@ -3021,8 +3231,9 @@ document.getElementById("siswaForm").addEventListener("submit", (e) => {
     namaOrtu: document.getElementById("fNamaOrtu").value.trim(),
     status: document.getElementById("fStatus").value,
   };
-  if (id) { DB.update("siswa", id, payload); showToast("Data siswa berhasil diperbarui.", "success"); }
-  else { DB.insert("siswa", payload); showToast("Data siswa berhasil ditambahkan.", "success"); }
+  const savedSiswa = id ? DB.update("siswa", id, payload) : DB.insert("siswa", payload);
+  if (savedSiswa) syncLinkedUserName("siswa", savedSiswa.id, savedSiswa.nama);
+  showToast(id ? "Data siswa berhasil diperbarui." : "Data siswa berhasil ditambahkan.", "success");
   closeModal("siswaModal");
   renderSiswa();
 });
@@ -3041,8 +3252,9 @@ document.getElementById("guruForm").addEventListener("submit", (e) => {
     waliKelas: document.getElementById("gWaliKelas").value,
     status: document.getElementById("gStatus").value,
   };
-  if (id) { DB.update("guru", id, payload); showToast("Data guru berhasil diperbarui.", "success"); }
-  else { DB.insert("guru", payload); showToast("Data guru berhasil ditambahkan.", "success"); }
+  const savedGuru = id ? DB.update("guru", id, payload) : DB.insert("guru", payload);
+  if (savedGuru) syncLinkedUserName("guru", savedGuru.id, savedGuru.nama);
+  showToast(id ? "Data guru berhasil diperbarui." : "Data guru berhasil ditambahkan.", "success");
   closeModal("guruModal");
   renderGuru();
 });
@@ -3061,8 +3273,9 @@ document.getElementById("tendikForm").addEventListener("submit", (e) => {
     alamat: document.getElementById("tdAlamat").value.trim(),
     status: document.getElementById("tdStatus").value,
   };
-  if (id) { DB.update("tendik", id, payload); showToast("Data tenaga pendidik berhasil diperbarui.", "success"); }
-  else { DB.insert("tendik", payload); showToast("Data tenaga pendidik berhasil ditambahkan.", "success"); }
+  const savedTendik = id ? DB.update("tendik", id, payload) : DB.insert("tendik", payload);
+  if (savedTendik) syncLinkedUserName("tendik", savedTendik.id, savedTendik.nama);
+  showToast(id ? "Data tenaga pendidik berhasil diperbarui." : "Data tenaga pendidik berhasil ditambahkan.", "success");
   closeModal("tendikModal");
   renderTendik();
 });

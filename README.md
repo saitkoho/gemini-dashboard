@@ -25,6 +25,7 @@ Cukup buka file `sistem-digital-smp-hulnani.html` langsung dengan browser (doubl
   - **Data Siswa** — CRUD lengkap, pencarian, filter kelas, dan detail siswa.
   - **Data Guru** — CRUD lengkap.
   - **Tenaga Pendidik** — CRUD data tenaga kependidikan non-guru (TU, Pustakawan, Laboran, Satpam, Petugas Kebersihan, dll).
+  - **Manajemen Pengguna** — buat, ubah, nonaktifkan, atau hapus akun login; atur username, kata sandi, serta peran Administrator, Guru, Tenaga Pendidik, Kepala Sekolah, dan Siswa; tautkan tiap akun ke data profilnya.
   - **Data Kelas** — kelola rombongan belajar & wali kelas.
   - **Pengumuman** — buat & kelola pengumuman sekolah.
   - **Pengaturan** — profil sekolah, manajemen tahun ajaran aktif, tambah tahun ajaran baru, ekspor/impor data (backup JSON), dan reset data.
@@ -53,6 +54,10 @@ Cukup buka file `sistem-digital-smp-hulnani.html` langsung dengan browser (doubl
 4. Gunakan selector tahun ajaran/semester di topbar untuk melihat semester berjalan maupun arsip. Ketika periode selain periode aktif dipilih, aplikasi menandainya sebagai **Tampilan Arsip** dan mencegah perubahan transaksi.
 
 Riwayat transaksi yang sudah ada dari versi sebelumnya akan otomatis diberi periode sesuai pengaturan tahun ajaran dan semester yang saat itu tersimpan. Cadangan JSON juga menyertakan katalog tahun ajaran serta seluruh arsip transaksi.
+
+## Manajemen Pengguna dan Role
+
+Admin dapat membuka **Administrator → Manajemen Pengguna** untuk membuat atau mengubah akun login. Pilih peran yang sesuai lalu hubungkan akun dengan data Guru, Tenaga Pendidik, Kepala Sekolah, atau Siswa; nama akun akan mengikuti profil yang dipilih. Akun Administrator dapat dibuat tanpa profil pegawai. Kata sandi dapat diganti melalui tombol kunci tanpa menampilkannya di tabel, dan akun dapat dinonaktifkan tanpa menghapus data profil. Sistem menjaga agar selalu ada minimal satu Administrator aktif serta mencegah satu profil dipasangkan ke lebih dari satu akun.
 
 ## Arsitektur
 
