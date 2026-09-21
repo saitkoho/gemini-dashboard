@@ -32,7 +32,7 @@ Cukup buka file `sistem-digital-smp-hulnani.html` langsung dengan browser (doubl
   - **Jurnal Mengajar** — catat tanggal, kelas, mata pelajaran, jam ke, materi yang diajarkan, serta catatan pembelajaran.
   - **Absensi Siswa** — catat kehadiran siswa per kelas, tanggal, guru, dan mata pelajaran.
   - **Input Nilai** — input nilai per siswa, lengkap dengan jenis penilaian dan indikator KKM.
-  - Admin dapat mengakses seluruh data; Guru hanya mengelola jurnal, absensi, dan nilai miliknya sendiri pada mapel yang diampu.
+  - Admin menetapkan **Kelas yang Diampu** pada data Guru. Guru hanya dapat melihat dan mengolah siswa, jurnal, absensi, serta nilai pada kelas yang ditetapkan dan mata pelajaran yang tercantum pada profilnya; pilihan mata pelajaran otomatis terkunci.
 - **Data Akademik Siswa** — nilai dan kehadiran siswa dikelola oleh Guru melalui modul Guru Mata Pelajaran serta Wali Kelas. Riwayat nilai lama dimigrasikan otomatis ke Input Nilai Mata Pelajaran.
 - **Wali Kelas** (Admin/Guru) — Ringkasan Kelas, Siswa Binaan, Absensi & Rekap, serta Catatan Wali Kelas. Guru hanya melihat kelas yang diwalikan; Admin dapat memantau seluruh kelas.
 - **Perpustakaan** (Admin/Guru) — Koleksi Buku (CRUD), Peminjaman & Pengembalian, Anggota dari data Siswa/Guru, serta laporan sirkulasi. Guru bertugas sebagai petugas perpustakaan.

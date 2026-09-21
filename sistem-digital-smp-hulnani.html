@@ -316,6 +316,10 @@ tbody tr:hover { background: #fafbff; }
 .modal-foot { padding: 16px 22px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 10px; }
 .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 16px; }
 .form-grid .field.full { grid-column: 1 / -1; }
+.class-assignment-list { display: flex; flex-wrap: wrap; gap: 8px; padding: 10px; border: 1.5px solid var(--border); border-radius: var(--radius-sm); background: #fbfcfe; }
+.class-assignment-list label { display: inline-flex; align-items: center; gap: 6px; margin: 0; padding: 6px 9px; border: 1px solid var(--border); border-radius: 7px; background: #fff; font-size: 12.5px; font-weight: 600; color: var(--text-main); cursor: pointer; }
+.class-assignment-list input { width: auto; margin: 0; accent-color: var(--blue-600); }
+.field-note { color: var(--text-muted); font-size: 12px; line-height: 1.45; margin: 6px 0 0; }
 .toast-wrap { position: fixed; bottom: 24px; right: 24px; z-index: 200; display: flex; flex-direction: column; gap: 10px; }
 .toast { background: #1c2333; color: #fff; padding: 12px 18px; border-radius: 10px; font-size: 13px; box-shadow: var(--shadow-lg); display: flex; align-items: center; gap: 10px; min-width: 240px; animation: toast-in .2s ease; }
 .toast.success { background: #14453a; }
@@ -526,6 +530,7 @@ tbody tr:hover { background: #fafbff; }
           <div class="field"><label>No. Telepon</label><input type="text" id="gTelepon" /></div>
           <div class="field"><label>Email</label><input type="email" id="gEmail" /></div>
           <div class="field full"><label>Alamat</label><input type="text" id="gAlamat" /></div>
+          <div class="field full"><label>Kelas yang Diampu</label><div class="class-assignment-list" id="gKelasAmpu"></div><p class="field-note">Pilih kelas yang diajar. Akun Guru hanya dapat membuka data siswa, jurnal, absensi, dan nilai pada kelas ini.</p></div>
           <div class="field"><label>Wali Kelas</label><select id="gWaliKelas"><option value="">- Bukan Wali Kelas -</option></select></div>
           <div class="field">
             <label>Status</label>
@@ -750,12 +755,12 @@ const DB = (function () {
         { id: "m8", nama: "Seni Budaya", kkm: 70 },
       ],
       guru: [
-        { id: "g1", nip: "198501122010011001", nama: "Budi Santoso, S.Pd", jk: "L", mapel: "Matematika", telepon: "081234500001", email: "budi.santoso@smphulnani.sch.id", alamat: "Kupang", status: "Aktif", waliKelas: "VII-A" },
-        { id: "g2", nip: "198702152011012002", nama: "Siti Rahayu, S.Pd", jk: "P", mapel: "Bahasa Indonesia", telepon: "081234500002", email: "siti.rahayu@smphulnani.sch.id", alamat: "Kupang", status: "Aktif", waliKelas: "VII-B" },
-        { id: "g3", nip: "199001202012011003", nama: "Andi Wijaya, S.Pd", jk: "L", mapel: "Bahasa Inggris", telepon: "081234500003", email: "andi.wijaya@smphulnani.sch.id", alamat: "Kupang", status: "Aktif", waliKelas: "VIII-A" },
-        { id: "g4", nip: "198812112013012004", nama: "Maria Goreti, S.Si", jk: "P", mapel: "IPA", telepon: "081234500004", email: "maria.goreti@smphulnani.sch.id", alamat: "Kupang", status: "Aktif", waliKelas: "" },
-        { id: "g5", nip: "199203302014011005", nama: "Yusuf Kalla, S.Pd", jk: "L", mapel: "IPS", telepon: "081234500005", email: "yusuf.kalla@smphulnani.sch.id", alamat: "Kupang", status: "Aktif", waliKelas: "" },
-        { id: "g6", nip: "198609182010012006", nama: "Fitriani, S.Pd", jk: "P", mapel: "PJOK", telepon: "081234500006", email: "fitriani@smphulnani.sch.id", alamat: "Kupang", status: "Cuti", waliKelas: "" },
+        { id: "g1", nip: "198501122010011001", nama: "Budi Santoso, S.Pd", jk: "L", mapel: "Matematika", telepon: "081234500001", email: "budi.santoso@smphulnani.sch.id", alamat: "Kupang", kelasAmpu: ["VII-A"], status: "Aktif", waliKelas: "VII-A" },
+        { id: "g2", nip: "198702152011012002", nama: "Siti Rahayu, S.Pd", jk: "P", mapel: "Bahasa Indonesia", telepon: "081234500002", email: "siti.rahayu@smphulnani.sch.id", alamat: "Kupang", kelasAmpu: ["VII-B"], status: "Aktif", waliKelas: "VII-B" },
+        { id: "g3", nip: "199001202012011003", nama: "Andi Wijaya, S.Pd", jk: "L", mapel: "Bahasa Inggris", telepon: "081234500003", email: "andi.wijaya@smphulnani.sch.id", alamat: "Kupang", kelasAmpu: ["VIII-A"], status: "Aktif", waliKelas: "VIII-A" },
+        { id: "g4", nip: "198812112013012004", nama: "Maria Goreti, S.Si", jk: "P", mapel: "IPA", telepon: "081234500004", email: "maria.goreti@smphulnani.sch.id", alamat: "Kupang", kelasAmpu: ["IX-A"], status: "Aktif", waliKelas: "" },
+        { id: "g5", nip: "199203302014011005", nama: "Yusuf Kalla, S.Pd", jk: "L", mapel: "IPS", telepon: "081234500005", email: "yusuf.kalla@smphulnani.sch.id", alamat: "Kupang", kelasAmpu: ["VIII-A", "IX-A"], status: "Aktif", waliKelas: "" },
+        { id: "g6", nip: "198609182010012006", nama: "Fitriani, S.Pd", jk: "P", mapel: "PJOK", telepon: "081234500006", email: "fitriani@smphulnani.sch.id", alamat: "Kupang", kelasAmpu: ["VII-A", "VII-B"], status: "Cuti", waliKelas: "" },
       ],
       tendik: [
         { id: "t1", nip: "197805102006041001", nama: "Herman Wijaya, S.E", jk: "L", jabatan: "Kepala Tata Usaha", unit: "Tata Usaha", telepon: "081234600001", email: "herman.wijaya@smphulnani.sch.id", alamat: "Kupang", status: "Aktif" },
@@ -890,6 +895,24 @@ const DB = (function () {
         data.tahunAjaranList = data.tahunAjaranList.map((item) => ({ ...item, aktif: item.tahunAjaran === data.settings.tahunAjaran }));
         changed = true;
       }
+      // Tambahkan daftar kelas yang diampu pada data guru versi sebelumnya.
+      // Kelas diturunkan dari wali kelas serta transaksi pengajaran yang sudah ada.
+      const classNames = new Set((data.kelas || []).map((item) => item.nama));
+      (data.guru || []).forEach((guru) => {
+        if (Array.isArray(guru.kelasAmpu)) {
+          const normalized = [...new Set([...guru.kelasAmpu, ...(guru.waliKelas ? [guru.waliKelas] : [])].filter((kelas) => classNames.has(kelas)))];
+          if (normalized.length !== guru.kelasAmpu.length || normalized.some((kelas) => !guru.kelasAmpu.includes(kelas))) { guru.kelasAmpu = normalized; changed = true; }
+          return;
+        }
+        const taughtClasses = new Set(guru.waliKelas ? [guru.waliKelas] : []);
+        (data.jurnalMengajar || []).filter((item) => item.guruId === guru.id && item.kelas).forEach((item) => taughtClasses.add(item.kelas));
+        ["absensiMapel", "nilaiMapel"].forEach((collection) => (data[collection] || []).filter((item) => item.guruId === guru.id).forEach((item) => {
+          const siswa = (data.siswa || []).find((row) => row.id === item.siswaId);
+          if (item.kelas || siswa) taughtClasses.add(item.kelas || siswa.kelas);
+        }));
+        guru.kelasAmpu = [...taughtClasses].filter((kelas) => classNames.has(kelas));
+        changed = true;
+      });
       // Aplikasi operasional ini tidak menyediakan akun maupun peran Siswa.
       // Data siswa tetap tersimpan sebagai data induk dan transaksi akademik.
       const studentAccounts = (data.users || []).filter((user) => user.role === "siswa");
@@ -1433,13 +1456,16 @@ function renderDashboard() {
   const nilai = recordsForViewedPeriod("nilaiMapel");
   const pengumuman = recordsForViewedPeriod("pengumuman");
   const settings = DB.get("settings");
+  const guruKelasAmpu = session.role === "guru" ? getGuruTaughtClasses(session.linkedId) : [];
+  const absensiTampil = session.role === "guru" ? absensi.filter((item) => guruKelasAmpu.includes(item.kelas || ((siswa.find((row) => row.id === item.siswaId) || {}).kelas))) : absensi;
+  const nilaiTampil = session.role === "guru" ? nilai.filter((item) => item.guruId === session.linkedId && item.mapelId === getGuruMapelId(session.linkedId) && guruKelasAmpu.includes(item.kelas || ((siswa.find((row) => row.id === item.siswaId) || {}).kelas))) : nilai;
 
   const today = new Date().toISOString().slice(0, 10);
   const siswaAktif = siswa.filter(s => s.status === "Aktif");
-  const absenHariIni = absensi.filter(a => a.tanggal === today);
+  const absenHariIni = absensiTampil.filter(a => a.tanggal === today);
   const hadirHariIni = absenHariIni.filter(a => a.status === "Hadir").length;
   const persenHadir = absenHariIni.length ? Math.round((hadirHariIni / absenHariIni.length) * 100) : 0;
-  const rataRataNilai = nilai.length ? Math.round(nilai.reduce((sum, n) => sum + Number(n.nilai), 0) / nilai.length) : 0;
+  const rataRataNilai = nilaiTampil.length ? Math.round(nilaiTampil.reduce((sum, n) => sum + Number(n.nilai), 0) / nilaiTampil.length) : 0;
 
   let statCardsHtml = "";
   if (session.role === "admin") {
@@ -1461,17 +1487,16 @@ function renderDashboard() {
         <div class="stat-icon icon-green">🗓️</div>
       </div>`;
   } else if (session.role === "guru") {
-    const myClass = guru.find(g => g.id === session.linkedId);
-    const waliKelasNama = myClass ? myClass.waliKelas : "-";
-    const siswaWali = siswa.filter(s => s.kelas === waliKelasNama).length;
+    const me = guru.find(g => g.id === session.linkedId) || {};
+    const siswaAmpu = siswa.filter((item) => guruKelasAmpu.includes(item.kelas) && item.status === "Aktif").length;
     statCardsHtml = `
       <div class="stat-card">
-        <div class="stat-info"><div class="label">Kelas Wali</div><div class="value">${waliKelasNama || "-"}</div><div class="delta">${siswaWali} siswa</div></div>
+        <div class="stat-info"><div class="label">Kelas Diampu</div><div class="value">${guruKelasAmpu.length}</div><div class="delta">${guruKelasAmpu.length ? escapeHtml(guruKelasAmpu.join(", ")) : "Belum ditetapkan"}</div></div>
         <div class="stat-icon icon-blue">🏫</div>
       </div>
       <div class="stat-card">
-        <div class="stat-info"><div class="label">Mapel Diampu</div><div class="value" style="font-size:18px;">${myClass ? myClass.mapel : "-"}</div></div>
-        <div class="stat-icon icon-purple">📘</div>
+        <div class="stat-info"><div class="label">Siswa Kelas Diampu</div><div class="value">${siswaAmpu}</div><div class="delta">${escapeHtml(me.mapel || "Mata pelajaran belum diatur")}</div></div>
+        <div class="stat-icon icon-purple">🧑‍🎓</div>
       </div>
       <div class="stat-card">
         <div class="stat-info"><div class="label">Rata-rata Nilai</div><div class="value">${rataRataNilai}</div><div class="delta">Semester ${settings.semester}</div></div>
@@ -1498,7 +1523,7 @@ function renderDashboard() {
       <div class="stat-card"><div class="stat-info"><div class="label">Rata-rata Nilai</div><div class="value">${rataRataNilai}</div><div class="delta">Semester ${settings.semester}</div></div><div class="stat-icon icon-orange">🎓</div></div>`;
   }
 
-  const recentAbsen = [...absensi].sort((a,b) => b.tanggal.localeCompare(a.tanggal)).slice(0, 6);
+  const recentAbsen = [...absensiTampil].sort((a,b) => b.tanggal.localeCompare(a.tanggal)).slice(0, 6);
   const activityHtml = recentAbsen.map(a => {
     const s = DB.findById("siswa", a.siswaId);
     const iconMap = { Hadir: ["✅","icon-green"], Sakit: ["🤒","icon-orange"], Izin: ["✉️","icon-blue"], Alpa: ["❌","icon-red"] };
@@ -1508,7 +1533,7 @@ function renderDashboard() {
 
   const annHtml = [...pengumuman].sort((a,b)=>b.tanggal.localeCompare(a.tanggal)).slice(0,3).map(p => `
     <div class="mini-announce"><h4>${escapeHtml(p.judul)}</h4><p>${formatDate(p.tanggal)} • ${escapeHtml(p.kategori)}</p></div>`).join("") || `<div class="empty-state"><div class="ic">📣</div>Belum ada pengumuman.</div>`;
-  const activityRoute = ["admin", "guru"].includes(session.role) ? "wali-absensi" : session.role === "tendik" ? "tu-surat-masuk" : "kepsek-kehadiran";
+  const activityRoute = session.role === "guru" ? "absensi-siswa" : session.role === "admin" ? "wali-absensi" : session.role === "tendik" ? "tu-surat-masuk" : "kepsek-kehadiran";
   const infoRoute = ["admin", "guru"].includes(session.role) ? "pengumuman" : session.role === "tendik" ? "tu-surat-masuk" : "kepsek-dashboard";
 
   content.innerHTML = `
@@ -1949,6 +1974,7 @@ const siswaState = { searchTerm: "", filterKelas: "", currentPage: 1, pageSize: 
 function renderSiswa() {
   const content = document.getElementById("pageContent");
   const isAdmin = session.role === "admin";
+  if (!isAdmin && siswaState.filterKelas && !isGuruAllowedClass(session.linkedId, siswaState.filterKelas)) siswaState.filterKelas = "";
 
   function statusBadge(status) {
     const map = { Aktif: "badge-green", Pindah: "badge-orange", Lulus: "badge-blue", Nonaktif: "badge-red" };
@@ -1956,7 +1982,7 @@ function renderSiswa() {
   }
 
   function renderToolbar() {
-    const kelasOptions = DB.get("kelas").map(k => k.nama);
+    const kelasOptions = DB.get("kelas").filter((k) => isAdmin || isGuruAllowedClass(session.linkedId, k.nama)).map(k => k.nama);
     return `
       <div class="toolbar">
         <div class="toolbar-left">
@@ -1972,6 +1998,7 @@ function renderSiswa() {
 
   function renderTable() {
     let data = DB.get("siswa");
+    if (!isAdmin) data = data.filter((s) => isGuruAllowedClass(session.linkedId, s.kelas));
     if (siswaState.filterKelas) data = data.filter(s => s.kelas === siswaState.filterKelas);
     if (siswaState.searchTerm) {
       const q = siswaState.searchTerm.toLowerCase();
@@ -2066,6 +2093,7 @@ window.editSiswa = function(id) { const s = DB.findById("siswa", id); if (s) ope
 window.viewSiswa = function(id) {
   const s = DB.findById("siswa", id);
   if (!s) return;
+  if (session.role === "guru" && !isGuruAllowedClass(session.linkedId, s.kelas)) { showToast("Anda hanya dapat membuka data siswa pada kelas yang diampu.", "error"); return; }
   const map = { Aktif: "badge-green", Pindah: "badge-orange", Lulus: "badge-blue", Nonaktif: "badge-red" };
   document.getElementById("detailBody").innerHTML = `
     <div class="flex gap-12" style="align-items:center; margin-bottom:18px;">
@@ -2126,6 +2154,7 @@ function renderGuru() {
       <tr>
         <td><div class="table-avatar"><div class="avatar">${initials(g.nama)}</div><div><div class="tname">${escapeHtml(g.nama)}</div><div class="tsub">NIP: ${escapeHtml(g.nip)}</div></div></div></td>
         <td>${escapeHtml(g.mapel)}</td>
+        <td>${(g.kelasAmpu || []).length ? (g.kelasAmpu || []).map((kelas) => `<span class="badge badge-blue" style="margin:2px;">${escapeHtml(kelas)}</span>`).join("") : "-"}</td>
         <td>${g.waliKelas ? escapeHtml(g.waliKelas) : "-"}</td>
         <td>${escapeHtml(g.telepon || "-")}</td>
         <td>${statusBadge(g.status)}</td>
@@ -2134,7 +2163,7 @@ function renderGuru() {
 
     const tableHtml = total === 0
       ? `<div class="empty-state"><div class="ic">🧑‍🏫</div>Tidak ada data guru yang ditemukan.</div>`
-      : `<table><thead><tr><th>Nama Guru</th><th>Mata Pelajaran</th><th>Wali Kelas</th><th>Telepon</th><th>Status</th><th>Aksi</th></tr></thead><tbody>${rows}</tbody></table>`;
+      : `<table><thead><tr><th>Nama Guru</th><th>Mata Pelajaran</th><th>Kelas Diampu</th><th>Wali Kelas</th><th>Telepon</th><th>Status</th><th>Aksi</th></tr></thead><tbody>${rows}</tbody></table>`;
 
     const paginationHtml = `
       <div class="pagination">
@@ -2172,11 +2201,24 @@ function populateWaliKelasSelect(selected) {
   const sel = document.getElementById("gWaliKelas");
   sel.innerHTML = `<option value="">- Bukan Wali Kelas -</option>` + kelas.map(k => `<option value="${escapeHtml(k.nama)}" ${k.nama===selected?"selected":""}>${escapeHtml(k.nama)}</option>`).join("");
 }
+function populateKelasAmpuSelect(selected = []) {
+  const assigned = new Set(selected);
+  const container = document.getElementById("gKelasAmpu");
+  const classes = DB.get("kelas");
+  container.innerHTML = classes.map((kelas) => `<label><input type="checkbox" name="gKelasAmpuItem" value="${escapeHtml(kelas.nama)}" ${assigned.has(kelas.nama) ? "checked" : ""} />${escapeHtml(kelas.nama)}</label>`).join("") || "<span class=\"text-muted\">Belum ada data kelas. Tambahkan kelas terlebih dahulu.</span>";
+}
+function selectedKelasAmpu() { return [...document.querySelectorAll('input[name="gKelasAmpuItem"]:checked')].map((item) => item.value); }
 
 window.openGuruForm = function(guru) {
   document.getElementById("guruForm").reset();
   populateMapelSelect(guru ? guru.mapel : "");
   populateWaliKelasSelect(guru ? guru.waliKelas : "");
+  populateKelasAmpuSelect(guru ? guru.kelasAmpu || [] : []);
+  document.getElementById("gWaliKelas").onchange = () => {
+    const waliKelas = document.getElementById("gWaliKelas").value;
+    const checkbox = [...document.querySelectorAll('input[name="gKelasAmpuItem"]')].find((item) => item.value === waliKelas);
+    if (checkbox) checkbox.checked = true;
+  };
   if (guru) {
     document.getElementById("guruModalTitle").textContent = "Edit Data Guru";
     document.getElementById("guruId").value = guru.id;
@@ -2392,17 +2434,20 @@ function getGuruMapelId(guruId) {
   const mapel = guru ? DB.get("mapel").find((m) => m.nama === guru.mapel) : null;
   return mapel ? mapel.id : "";
 }
-function getGuruDefaultKelas(guruId) {
+function getGuruTaughtClasses(guruId) {
   const guru = DB.findById("guru", guruId);
-  const kelas = DB.get("kelas");
-  return guru && kelas.some((k) => k.nama === guru.waliKelas) ? guru.waliKelas : (kelas[0] ? kelas[0].nama : "");
+  const existingClasses = new Set(DB.get("kelas").map((item) => item.nama));
+  return guru && Array.isArray(guru.kelasAmpu) ? [...new Set(guru.kelasAmpu.filter((kelas) => existingClasses.has(kelas)))] : [];
 }
+function isGuruAllowedClass(guruId, kelas) { return getGuruTaughtClasses(guruId).includes(kelas); }
+function getGuruDefaultKelas(guruId) { return getGuruTaughtClasses(guruId)[0] || ""; }
 function activeGuruList() { return DB.get("guru").filter((g) => g.status === "Aktif"); }
 function guruOptions(selected) {
   return activeGuruList().map((g) => `<option value="${g.id}" ${g.id === selected ? "selected" : ""}>${escapeHtml(g.nama)} — ${escapeHtml(g.mapel || "Belum diatur")}</option>`).join("");
 }
-function kelasOptions(selected) {
-  return DB.get("kelas").map((k) => `<option value="${escapeHtml(k.nama)}" ${k.nama === selected ? "selected" : ""}>${escapeHtml(k.nama)}</option>`).join("");
+function kelasOptions(selected, guruId = "", restrictToGuru = false) {
+  const allowedClasses = restrictToGuru ? new Set(getGuruTaughtClasses(guruId)) : null;
+  return DB.get("kelas").filter((k) => !allowedClasses || allowedClasses.has(k.nama)).map((k) => `<option value="${escapeHtml(k.nama)}" ${k.nama === selected ? "selected" : ""}>${escapeHtml(k.nama)}</option>`).join("");
 }
 function mapelOptions(selected, guruId, restrictToGuru) {
   const assignedMapelId = getGuruMapelId(guruId);
@@ -2411,7 +2456,15 @@ function mapelOptions(selected, guruId, restrictToGuru) {
   return list.map((m) => `<option value="${m.id}" ${m.id === selected ? "selected" : ""}>${escapeHtml(m.nama)} (KKM ${m.kkm})</option>`).join("");
 }
 function canManageGuruMapelRecord(record) {
-  return session.role === "admin" || (session.role === "guru" && record && record.guruId === session.linkedId);
+  if (session.role === "admin") return true;
+  if (session.role !== "guru" || !record || record.guruId !== session.linkedId) return false;
+  return record.mapelId === getGuruMapelId(session.linkedId) && isGuruAllowedClass(session.linkedId, record.kelas || ((DB.findById("siswa", record.siswaId) || {}).kelas));
+}
+function guruTeachingScopeBadge() {
+  if (session.role !== "guru") return "";
+  const guru = DB.findById("guru", session.linkedId) || {};
+  const classes = getGuruTaughtClasses(session.linkedId);
+  return `<span class="badge badge-blue">${escapeHtml(guru.mapel || "Mapel belum diatur")} • ${classes.length ? escapeHtml(classes.join(", ")) : "Belum ada kelas diampu"}</span>`;
 }
 
 /* ---- JURNAL MENGAJAR ---- */
@@ -2420,11 +2473,13 @@ function renderJurnalMengajar() {
   if (!window.jurnalMengajarState) window.jurnalMengajarState = { searchTerm: "", kelas: "", mapelId: "", guruId: "" };
   const state = window.jurnalMengajarState;
   const isAdmin = session.role === "admin";
+  if (!isAdmin && state.kelas && !isGuruAllowedClass(session.linkedId, state.kelas)) state.kelas = "";
+  if (!isAdmin) state.mapelId = getGuruMapelId(session.linkedId);
   let data = recordsForViewedPeriod("jurnalMengajar");
   const guru = DB.get("guru");
   const mapel = DB.get("mapel");
 
-  if (!isAdmin) data = data.filter((j) => j.guruId === session.linkedId);
+  if (!isAdmin) data = data.filter((j) => j.guruId === session.linkedId && j.mapelId === getGuruMapelId(session.linkedId) && isGuruAllowedClass(session.linkedId, j.kelas));
   if (state.kelas) data = data.filter((j) => j.kelas === state.kelas);
   if (state.mapelId) data = data.filter((j) => j.mapelId === state.mapelId);
   if (isAdmin && state.guruId) data = data.filter((j) => j.guruId === state.guruId);
@@ -2438,9 +2493,10 @@ function renderJurnalMengajar() {
     <div class="toolbar">
       <div class="toolbar-left">
         ${periodContextBadge()}
+        ${guruTeachingScopeBadge()}
         <div class="search-box"><span class="ic">🔍</span><input type="text" id="jurnalSearch" placeholder="Cari materi atau catatan..." value="${escapeHtml(state.searchTerm)}" /></div>
-        <select class="select-filter" id="jurnalKelas"><option value="">Semua Kelas</option>${kelasOptions(state.kelas)}</select>
-        <select class="select-filter" id="jurnalMapel"><option value="">Semua Mapel</option>${mapelOptions(state.mapelId, "", false)}</select>
+        <select class="select-filter" id="jurnalKelas"><option value="">Semua Kelas</option>${kelasOptions(state.kelas, session.role === "guru" ? session.linkedId : "", session.role === "guru")}</select>
+        <select class="select-filter" id="jurnalMapel" ${isAdmin ? "" : "disabled"}><option value="">Semua Mapel</option>${mapelOptions(state.mapelId, isAdmin ? "" : session.linkedId, !isAdmin)}</select>
         ${isAdmin ? `<select class="select-filter" id="jurnalGuru"><option value="">Semua Guru</option>${guruOptions(state.guruId)}</select>` : ""}
       </div>
       <button class="btn btn-blue" id="btnAddJurnal">➕ Tambah Jurnal</button>
@@ -2480,8 +2536,9 @@ function populateJurnalForm(record) {
   const defaultMapel = getGuruMapelId(guruId);
   document.getElementById("jmGuru").innerHTML = guruOptions(guruId);
   document.getElementById("jmGuru").disabled = isGuru;
-  document.getElementById("jmKelas").innerHTML = kelasOptions(record ? record.kelas : getGuruDefaultKelas(guruId));
+  document.getElementById("jmKelas").innerHTML = kelasOptions(record ? record.kelas : getGuruDefaultKelas(guruId), guruId, isGuru);
   document.getElementById("jmMapel").innerHTML = mapelOptions(record ? record.mapelId : defaultMapel, guruId, isGuru);
+  document.getElementById("jmMapel").disabled = isGuru;
   document.getElementById("jmGuru").onchange = () => {
     const selectedGuru = document.getElementById("jmGuru").value;
     const suggestedMapel = getGuruMapelId(selectedGuru);
@@ -2519,7 +2576,11 @@ function getAbsensiMapelState() {
     const guruId = session.role === "guru" ? session.linkedId : ((activeGuruList()[0] || {}).id || "");
     window.absensiMapelState = { guruId, kelas: getGuruDefaultKelas(guruId), mapelId: getGuruMapelId(guruId), tanggal: new Date().toISOString().slice(0, 10) };
   }
-  if (session.role === "guru") window.absensiMapelState.guruId = session.linkedId;
+  if (session.role === "guru") {
+    window.absensiMapelState.guruId = session.linkedId;
+    window.absensiMapelState.mapelId = getGuruMapelId(session.linkedId);
+    if (!isGuruAllowedClass(session.linkedId, window.absensiMapelState.kelas)) window.absensiMapelState.kelas = getGuruDefaultKelas(session.linkedId);
+  }
   return window.absensiMapelState;
 }
 function renderAbsensiSiswaMapel() {
@@ -2545,9 +2606,10 @@ function renderAbsensiSiswaMapel() {
   content.innerHTML = `
     <div class="toolbar"><div class="toolbar-left">
       ${periodContextBadge()}
+      ${guruTeachingScopeBadge()}
       ${isAdmin ? `<select class="select-filter" id="amGuru">${guruOptions(state.guruId)}</select>` : `<span class="badge badge-blue">${escapeHtml(currentGuru.nama || "Guru Mata Pelajaran")}</span>`}
-      <select class="select-filter" id="amKelas">${kelasOptions(state.kelas)}</select>
-      <select class="select-filter" id="amMapel">${mapelOptions(state.mapelId, state.guruId, !isAdmin)}</select>
+      <select class="select-filter" id="amKelas">${kelasOptions(state.kelas, isAdmin ? "" : session.linkedId, !isAdmin)}</select>
+      <select class="select-filter" id="amMapel" ${isAdmin ? "" : "disabled"}>${mapelOptions(state.mapelId, state.guruId, !isAdmin)}</select>
       <input type="date" class="select-filter" id="amTanggal" value="${state.tanggal}" />
     </div></div>
     <div class="card" style="margin-bottom:16px; padding:14px 18px;"><span class="text-muted" style="font-size:13px;">Absensi <strong>${escapeHtml(currentMapel.nama || "mata pelajaran")}</strong> • ${escapeHtml(state.kelas)} • ${formatDate(state.tanggal)}</span></div>
@@ -2563,6 +2625,9 @@ window.setAbsenMapel = function(siswaId, status) {
   if (!requireActivePeriodForWrite()) return;
   const state = getAbsensiMapelState();
   if (!state.guruId || !state.mapelId) { showToast("Pilih guru dan mata pelajaran terlebih dahulu.", "error"); return; }
+  const siswa = DB.findById("siswa", siswaId);
+  if (!siswa || siswa.kelas !== state.kelas) { showToast("Siswa tidak sesuai dengan kelas yang dipilih.", "error"); return; }
+  if (session.role === "guru" && (state.guruId !== session.linkedId || !isGuruAllowedClass(session.linkedId, state.kelas) || state.mapelId !== getGuruMapelId(session.linkedId))) { showToast("Anda hanya dapat mengisi absensi pada kelas dan mata pelajaran yang diampu.", "error"); return; }
   const records = recordsForViewedPeriod("absensiMapel");
   const existing = records.find((a) => a.guruId === state.guruId && a.siswaId === siswaId && a.mapelId === state.mapelId && a.tanggal === state.tanggal);
   if (existing) DB.update("absensiMapel", existing.id, { status });
@@ -2579,7 +2644,8 @@ function getInputNilaiState() {
   }
   if (session.role === "guru") {
     window.inputNilaiMapelState.guruId = session.linkedId;
-    if (!window.inputNilaiMapelState.mapelId) window.inputNilaiMapelState.mapelId = getGuruMapelId(session.linkedId);
+    window.inputNilaiMapelState.mapelId = getGuruMapelId(session.linkedId);
+    if (window.inputNilaiMapelState.kelas && !isGuruAllowedClass(session.linkedId, window.inputNilaiMapelState.kelas)) window.inputNilaiMapelState.kelas = "";
   }
   return window.inputNilaiMapelState;
 }
@@ -2591,7 +2657,7 @@ function renderInputNilaiMapel() {
   const guru = DB.get("guru");
   const mapel = DB.get("mapel");
   let data = recordsForViewedPeriod("nilaiMapel");
-  if (!isAdmin) data = data.filter((n) => n.guruId === session.linkedId);
+  if (!isAdmin) data = data.filter((n) => n.guruId === session.linkedId && n.mapelId === getGuruMapelId(session.linkedId) && isGuruAllowedClass(session.linkedId, n.kelas || ((siswa.find((item) => item.id === n.siswaId) || {}).kelas)));
   else if (state.guruId) data = data.filter((n) => n.guruId === state.guruId);
   if (state.kelas) data = data.filter((n) => (n.kelas || (siswa.find((s) => s.id === n.siswaId) || {}).kelas) === state.kelas);
   if (state.mapelId) data = data.filter((n) => n.mapelId === state.mapelId);
@@ -2610,10 +2676,11 @@ function renderInputNilaiMapel() {
   content.innerHTML = `
     <div class="toolbar"><div class="toolbar-left">
       ${periodContextBadge()}
+      ${guruTeachingScopeBadge()}
       <div class="search-box"><span class="ic">🔍</span><input type="text" id="inSearch" placeholder="Cari nama siswa..." value="${escapeHtml(state.searchTerm)}" /></div>
       ${isAdmin ? `<select class="select-filter" id="inFilterGuru"><option value="">Semua Guru</option>${guruOptions(state.guruId)}</select>` : ""}
-      <select class="select-filter" id="inFilterKelas"><option value="">Semua Kelas</option>${kelasOptions(state.kelas)}</select>
-      <select class="select-filter" id="inFilterMapel"><option value="">Semua Mapel</option>${mapelOptions(state.mapelId, state.guruId, !isAdmin)}</select>
+      <select class="select-filter" id="inFilterKelas"><option value="">Semua Kelas</option>${kelasOptions(state.kelas, isAdmin ? "" : session.linkedId, !isAdmin)}</select>
+      <select class="select-filter" id="inFilterMapel" ${isAdmin ? "" : "disabled"}><option value="">Semua Mapel</option>${mapelOptions(state.mapelId, state.guruId, !isAdmin)}</select>
     </div><button class="btn btn-blue" id="btnAddInputNilai">➕ Input Nilai</button></div>
     ${data.length ? `<div class="table-wrap"><table><thead><tr><th>Siswa</th><th>Guru</th><th>Mapel</th><th>Jenis</th><th>Nilai</th><th>Periode</th><th>Aksi</th></tr></thead><tbody>${rows}</tbody></table></div>` : `<div class="table-wrap"><div class="empty-state"><div class="ic">📝</div>Belum ada nilai yang sesuai.</div></div>`}`;
   document.getElementById("inSearch").addEventListener("input", debounce((event) => { state.searchTerm = event.target.value; renderInputNilaiMapel(); const input = document.getElementById("inSearch"); input.focus(); input.setSelectionRange(input.value.length, input.value.length); }, 300));
@@ -2631,12 +2698,13 @@ function populateInputNilaiForm(record) {
   const isGuru = session.role === "guru";
   const recordStudent = record ? DB.findById("siswa", record.siswaId) : null;
   const guruId = isGuru ? session.linkedId : (record ? record.guruId : ((activeGuruList()[0] || {}).id || ""));
-  const kelas = recordStudent ? recordStudent.kelas : getGuruDefaultKelas(guruId);
+  const kelas = record ? (record.kelas || (recordStudent ? recordStudent.kelas : "")) : getGuruDefaultKelas(guruId);
   document.getElementById("inGuru").innerHTML = guruOptions(guruId);
   document.getElementById("inGuru").disabled = isGuru;
-  document.getElementById("inKelas").innerHTML = kelasOptions(kelas);
+  document.getElementById("inKelas").innerHTML = kelasOptions(kelas, guruId, isGuru);
   populateInputNilaiSiswa(kelas, record ? record.siswaId : "");
   document.getElementById("inMapel").innerHTML = mapelOptions(record ? record.mapelId : getGuruMapelId(guruId), guruId, isGuru);
+  document.getElementById("inMapel").disabled = isGuru;
   document.getElementById("inGuru").onchange = () => {
     const selectedGuru = document.getElementById("inGuru").value;
     document.getElementById("inMapel").innerHTML = mapelOptions(getGuruMapelId(selectedGuru), selectedGuru, false);
@@ -3178,8 +3246,11 @@ document.getElementById("guruForm").addEventListener("submit", (e) => {
     email: document.getElementById("gEmail").value.trim(),
     alamat: document.getElementById("gAlamat").value.trim(),
     waliKelas: document.getElementById("gWaliKelas").value,
+    kelasAmpu: selectedKelasAmpu(),
     status: document.getElementById("gStatus").value,
   };
+  if (payload.waliKelas && !payload.kelasAmpu.includes(payload.waliKelas)) payload.kelasAmpu.push(payload.waliKelas);
+  if (!payload.kelasAmpu.length) { showToast("Pilih minimal satu kelas yang diampu guru.", "error"); return; }
   const savedGuru = id ? DB.update("guru", id, payload) : DB.insert("guru", payload);
   if (savedGuru) syncLinkedUserName("guru", savedGuru.id, savedGuru.nama);
   showToast(id ? "Data guru berhasil diperbarui." : "Data guru berhasil ditambahkan.", "success");
@@ -3224,7 +3295,7 @@ document.getElementById("kelasForm").addEventListener("submit", (e) => {
 
   const allGuru = DB.get("guru");
   allGuru.forEach(g => { if (g.waliKelas === payload.nama && g.id !== waliId) DB.update("guru", g.id, { waliKelas: "" }); });
-  if (guru) DB.update("guru", guru.id, { waliKelas: payload.nama });
+  if (guru) DB.update("guru", guru.id, { waliKelas: payload.nama, kelasAmpu: [...new Set([...(guru.kelasAmpu || []), payload.nama])] });
 
   closeModal("kelasModal");
   renderKelas();
@@ -3248,6 +3319,7 @@ document.getElementById("jurnalForm").addEventListener("submit", (e) => {
     catatan: document.getElementById("jmCatatan").value.trim(),
   };
   if (!payload.guruId || !payload.mapelId) { showToast("Guru dan mata pelajaran wajib dipilih.", "error"); return; }
+  if (session.role === "guru" && (!isGuruAllowedClass(session.linkedId, payload.kelas) || payload.mapelId !== getGuruMapelId(session.linkedId))) { showToast("Anda hanya dapat mencatat jurnal untuk kelas dan mata pelajaran yang diampu.", "error"); return; }
   if (id) { DB.update("jurnalMengajar", id, payload); showToast("Jurnal mengajar berhasil diperbarui.", "success"); }
   else { DB.insert("jurnalMengajar", payload); showToast("Jurnal mengajar berhasil ditambahkan.", "success"); }
   closeModal("jurnalModal");
@@ -3273,6 +3345,10 @@ document.getElementById("inputNilaiForm").addEventListener("submit", (e) => {
     tahunAjaran: settings.tahunAjaran,
   };
   if (!payload.guruId || !payload.siswaId || !payload.mapelId) { showToast("Guru, siswa, dan mata pelajaran wajib dipilih.", "error"); return; }
+  const siswaTerpilih = DB.findById("siswa", payload.siswaId);
+  const kelasTerpilih = document.getElementById("inKelas").value;
+  if (!siswaTerpilih || siswaTerpilih.kelas !== kelasTerpilih) { showToast("Siswa tidak sesuai dengan kelas yang dipilih.", "error"); return; }
+  if (session.role === "guru" && (!isGuruAllowedClass(session.linkedId, kelasTerpilih) || payload.mapelId !== getGuruMapelId(session.linkedId))) { showToast("Anda hanya dapat menginput nilai pada kelas dan mata pelajaran yang diampu.", "error"); return; }
   if (id) { DB.update("nilaiMapel", id, payload); showToast("Nilai berhasil diperbarui.", "success"); }
   else { DB.insert("nilaiMapel", payload); showToast("Nilai berhasil ditambahkan.", "success"); }
   closeModal("inputNilaiModal");
