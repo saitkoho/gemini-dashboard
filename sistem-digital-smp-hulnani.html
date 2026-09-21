@@ -1195,6 +1195,7 @@ const NAV_ITEMS = [
   { key: "input-nilai", icon: "✍️", label: "Input Nilai", roles: ["admin", "guru"], guruMapelGroup: true },
 
   { key: "wali-ringkasan", icon: "🏫", label: "Ringkasan Kelas", roles: ["admin", "guru"], waliKelasGroup: true },
+  { key: "wali-monitoring-mapel", icon: "📚", label: "Monitoring Mapel", roles: ["admin", "guru"], waliKelasGroup: true },
   { key: "wali-siswa", icon: "🧑‍🎓", label: "Siswa Binaan", roles: ["admin", "guru"], waliKelasGroup: true },
   { key: "wali-absensi", icon: "📅", label: "Absensi & Rekap", roles: ["admin", "guru"], waliKelasGroup: true },
   { key: "wali-catatan", icon: "📒", label: "Catatan Wali Kelas", roles: ["admin", "guru"], waliKelasGroup: true },
@@ -1247,6 +1248,7 @@ const PAGE_META = {
   "input-nilai": { title: "Input Nilai", sub: "Input dan kelola nilai siswa pada mata pelajaran yang diampu" },
 
   "wali-ringkasan": { title: "Ringkasan Kelas", sub: "Pantau kondisi dan kehadiran kelas binaan" },
+  "wali-monitoring-mapel": { title: "Monitoring Mapel", sub: "Nilai, kehadiran mapel, dan jurnal mengajar kelas binaan" },
   "wali-siswa": { title: "Siswa Binaan", sub: "Data siswa yang berada di bawah pembinaan wali kelas" },
   "wali-absensi": { title: "Absensi & Rekap", sub: "Rekap kehadiran dan tindak lanjut siswa per kelas" },
   "wali-catatan": { title: "Catatan Wali Kelas", sub: "Catatan perkembangan dan komunikasi wali kelas" },
@@ -1378,6 +1380,7 @@ const ROUTES = {
   "absensi-siswa": renderAbsensiSiswaMapel,
   "input-nilai": renderInputNilaiMapel,
   "wali-ringkasan": renderWaliRingkasan,
+  "wali-monitoring-mapel": renderWaliMonitoringMapel,
   "wali-siswa": renderWaliSiswa,
   "wali-absensi": renderWaliAbsensi,
   "wali-catatan": renderWaliCatatan,
@@ -1676,6 +1679,76 @@ function renderWaliRingkasan() {
     <div class="stat-grid"><div class="stat-card"><div class="stat-info"><div class="label">Siswa Aktif</div><div class="value">${siswa.length}</div></div><div class="stat-icon icon-blue">🧑‍🎓</div></div><div class="stat-card"><div class="stat-info"><div class="label">Hadir Hari Ini</div><div class="value">${count("Hadir")}</div></div><div class="stat-icon icon-green">✅</div></div><div class="stat-card"><div class="stat-info"><div class="label">Sakit / Izin</div><div class="value">${count("Sakit") + count("Izin")}</div></div><div class="stat-icon icon-orange">📅</div></div><div class="stat-card"><div class="stat-info"><div class="label">Alpa</div><div class="value">${count("Alpa")}</div></div><div class="stat-icon icon-red">❌</div></div></div>`;
   bindWaliToolbar(state, "wr", renderWaliRingkasan);
 }
+function renderWaliMonitoringMapel() {
+  const content = document.getElementById("pageContent");
+  const state = waliClassState("waliMonitoringMapelState");
+  if (!state.kelas) { content.innerHTML = pageEmpty("📚", "Akun guru ini belum ditetapkan sebagai wali kelas."); return; }
+  if (state.mapelId === undefined) state.mapelId = "";
+  if (state.siswaId === undefined) state.siswaId = "";
+  const allSiswa = DB.get("siswa");
+  const guru = DB.get("guru");
+  const mapel = DB.get("mapel");
+  const studentClass = (item) => item.kelas || ((allSiswa.find((s) => s.id === item.siswaId) || {}).kelas || "");
+  const nilaiKelas = recordsForViewedPeriod("nilaiMapel").filter((item) => studentClass(item) === state.kelas);
+  const absensiKelas = recordsForViewedPeriod("absensiMapel").filter((item) => studentClass(item) === state.kelas);
+  const jurnalKelas = recordsForViewedPeriod("jurnalMengajar").filter((item) => item.kelas === state.kelas);
+  const historicalIds = new Set([...nilaiKelas, ...absensiKelas].map((item) => item.siswaId));
+  const siswaKelas = isViewingActivePeriod() ? activeSiswa().filter((s) => s.kelas === state.kelas) : allSiswa.filter((s) => historicalIds.has(s.id));
+  if (state.siswaId && !siswaKelas.some((s) => s.id === state.siswaId)) state.siswaId = "";
+
+  const matchesFilter = (item) => (!state.mapelId || item.mapelId === state.mapelId) && (!state.siswaId || item.siswaId === state.siswaId);
+  const nilai = nilaiKelas.filter(matchesFilter).sort((a, b) => {
+    const namaA = (allSiswa.find((s) => s.id === a.siswaId) || {}).nama || "";
+    const namaB = (allSiswa.find((s) => s.id === b.siswaId) || {}).nama || "";
+    return namaA.localeCompare(namaB);
+  });
+  const absensi = absensiKelas.filter(matchesFilter).sort((a, b) => b.tanggal.localeCompare(a.tanggal));
+  const jurnal = jurnalKelas.filter((item) => !state.mapelId || item.mapelId === state.mapelId).sort((a, b) => b.tanggal.localeCompare(a.tanggal));
+  const rataNilai = nilai.length ? Math.round(nilai.reduce((total, item) => total + Number(item.nilai), 0) / nilai.length) : 0;
+  const hadir = absensi.filter((item) => item.status === "Hadir").length;
+  const persentaseHadir = absensi.length ? Math.round((hadir / absensi.length) * 100) : 0;
+
+  const nilaiRows = nilai.map((item) => {
+    const siswa = allSiswa.find((s) => s.id === item.siswaId) || {};
+    const pelajaran = mapel.find((m) => m.id === item.mapelId) || { nama: "-", kkm: 75 };
+    const pengajar = guru.find((g) => g.id === item.guruId) || {};
+    const tuntas = Number(item.nilai) >= Number(pelajaran.kkm || 75);
+    return `<tr><td><div class="tname">${escapeHtml(siswa.nama || "-")}</div><div class="tsub">${escapeHtml(siswa.nis || "-")}</div></td><td>${escapeHtml(pelajaran.nama || "-")}</td><td>${escapeHtml(item.jenis || "-")}</td><td>${tuntas ? `<span class="badge badge-green">${item.nilai}</span>` : `<span class="badge badge-red">${item.nilai}</span>`}</td><td>${pelajaran.kkm || "-"}</td><td>${escapeHtml(pengajar.nama || "-")}</td></tr>`;
+  }).join("");
+  const absensiRows = absensi.map((item) => {
+    const siswa = allSiswa.find((s) => s.id === item.siswaId) || {};
+    const pelajaran = mapel.find((m) => m.id === item.mapelId) || {};
+    const pengajar = guru.find((g) => g.id === item.guruId) || {};
+    return `<tr><td>${formatDate(item.tanggal)}</td><td><div class="tname">${escapeHtml(siswa.nama || "-")}</div><div class="tsub">${escapeHtml(siswa.nis || "-")}</div></td><td>${escapeHtml(pelajaran.nama || "-")}</td><td>${escapeHtml(pengajar.nama || "-")}</td><td>${supportBadge(item.status)}</td></tr>`;
+  }).join("");
+  const jurnalRows = jurnal.map((item) => {
+    const pelajaran = mapel.find((m) => m.id === item.mapelId) || {};
+    const pengajar = guru.find((g) => g.id === item.guruId) || {};
+    return `<tr><td>${formatDate(item.tanggal)}</td><td>${escapeHtml(pelajaran.nama || "-")}</td><td>${escapeHtml(pengajar.nama || "-")}</td><td>Jam ${escapeHtml(item.jamKe || "-")}</td><td><div class="tname">${escapeHtml(item.materi || "-")}</div>${item.catatan ? `<div class="tsub">${escapeHtml(item.catatan)}</div>` : ""}</td></tr>`;
+  }).join("");
+
+  content.innerHTML = `
+    <div class="toolbar"><div class="toolbar-left">
+      <select class="select-filter" id="wmKelas">${optionList(waliAllowedClasses().map((nama) => ({ value: nama, label: nama })), state.kelas, "Pilih Kelas")}</select>
+      <select class="select-filter" id="wmMapel"><option value="">Semua Mata Pelajaran</option>${mapel.map((item) => `<option value="${item.id}" ${item.id === state.mapelId ? "selected" : ""}>${escapeHtml(item.nama)}</option>`).join("")}</select>
+      <select class="select-filter" id="wmSiswa"><option value="">Semua Siswa</option>${siswaKelas.map((item) => `<option value="${item.id}" ${item.id === state.siswaId ? "selected" : ""}>${escapeHtml(item.nama)}</option>`).join("")}</select>
+    </div></div>
+    <div class="card" style="margin-bottom:16px; padding:14px 18px; border-left:4px solid var(--blue-500);"><span class="text-muted" style="font-size:13px; line-height:1.6;"><b style="color:var(--text-main);">📚 Data otomatis dari Guru Mata Pelajaran:</b> Nilai, kehadiran per mata pelajaran, dan jurnal mengajar untuk ${escapeHtml(state.kelas)} pada periode ${escapeHtml(currentPeriodLabel())}. Tampilan ini bersifat baca saja bagi Wali Kelas.</span></div>
+    <div class="stat-grid" style="margin-bottom:16px;">
+      <div class="stat-card"><div class="stat-info"><div class="label">Nilai Tercatat</div><div class="value">${nilai.length}</div></div><div class="stat-icon icon-blue">📝</div></div>
+      <div class="stat-card"><div class="stat-info"><div class="label">Rata-rata Nilai</div><div class="value">${rataNilai || "-"}</div></div><div class="stat-icon icon-purple">🎓</div></div>
+      <div class="stat-card"><div class="stat-info"><div class="label">Kehadiran Mapel</div><div class="value">${persentaseHadir}%</div><div class="delta">${hadir} hadir dari ${absensi.length} catatan</div></div><div class="stat-icon icon-green">✅</div></div>
+      <div class="stat-card"><div class="stat-info"><div class="label">Jurnal Mengajar</div><div class="value">${jurnal.length}</div></div><div class="stat-icon icon-orange">📚</div></div>
+    </div>
+    <div class="card" style="margin-bottom:16px;"><div class="card-head"><div><h3>Nilai Mata Pelajaran</h3><p>Rekap nilai yang dicatat oleh Guru Mata Pelajaran</p></div></div>${nilai.length ? `<div class="table-wrap" style="box-shadow:none;"><table><thead><tr><th>Siswa</th><th>Mata Pelajaran</th><th>Jenis</th><th>Nilai</th><th>KKM</th><th>Guru</th></tr></thead><tbody>${nilaiRows}</tbody></table></div>` : `<div class="empty-state"><div class="ic">📝</div>Belum ada nilai yang sesuai.</div>`}</div>
+    <div class="card" style="margin-bottom:16px;"><div class="card-head"><div><h3>Kehadiran per Mata Pelajaran</h3><p>Catatan absensi yang diinput oleh Guru Mata Pelajaran</p></div></div>${absensi.length ? `<div class="table-wrap" style="box-shadow:none;"><table><thead><tr><th>Tanggal</th><th>Siswa</th><th>Mata Pelajaran</th><th>Guru</th><th>Status</th></tr></thead><tbody>${absensiRows}</tbody></table></div>` : `<div class="empty-state"><div class="ic">🗓️</div>Belum ada kehadiran mata pelajaran yang sesuai.</div>`}</div>
+    <div class="card"><div class="card-head"><div><h3>Jurnal Mengajar</h3><p>Materi dan catatan pembelajaran dari Guru Mata Pelajaran</p></div></div>${jurnal.length ? `<div class="table-wrap" style="box-shadow:none;"><table><thead><tr><th>Tanggal</th><th>Mata Pelajaran</th><th>Guru</th><th>Jam Ke</th><th>Materi & Catatan</th></tr></thead><tbody>${jurnalRows}</tbody></table></div>` : `<div class="empty-state"><div class="ic">📚</div>Belum ada jurnal mengajar yang sesuai.</div>`}</div>`;
+
+  document.getElementById("wmKelas").addEventListener("change", (event) => { state.kelas = event.target.value; state.siswaId = ""; renderWaliMonitoringMapel(); });
+  document.getElementById("wmMapel").addEventListener("change", (event) => { state.mapelId = event.target.value; renderWaliMonitoringMapel(); });
+  document.getElementById("wmSiswa").addEventListener("change", (event) => { state.siswaId = event.target.value; renderWaliMonitoringMapel(); });
+}
+
 function renderWaliSiswa() {
   const content = document.getElementById("pageContent");
   const state = waliClassState("waliSiswaState");
