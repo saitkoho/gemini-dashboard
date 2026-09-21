@@ -375,7 +375,6 @@ tbody tr:hover { background: #fafbff; }
         <button type="button" data-role="guru">Guru</button>
         <button type="button" data-role="tendik">Tendik</button>
         <button type="button" data-role="kepsek">Kepsek</button>
-        <button type="button" data-role="siswa">Siswa</button>
       </div>
       <div class="login-error" id="loginError"></div>
       <form id="loginForm">
@@ -398,7 +397,6 @@ tbody tr:hover { background: #fafbff; }
         Guru &nbsp;&nbsp;&nbsp;→ guru / guru123<br/>
         Tendik &nbsp;→ tendik / tendik123<br/>
         Kepsek &nbsp;→ kepsek / kepsek123<br/>
-        Siswa &nbsp;&nbsp;→ siswa / siswa123
       </div>
     </div>
   </div>
@@ -735,7 +733,6 @@ const DB = (function () {
       users: [
         { id: "u1", username: "admin", password: "admin123", role: "admin", name: "Administrator", linkedId: null, status: "Aktif" },
         { id: "u2", username: "guru", password: "guru123", role: "guru", name: "Budi Santoso, S.Pd", linkedId: "g1", status: "Aktif" },
-        { id: "u3", username: "siswa", password: "siswa123", role: "siswa", name: "Nisa Amalia", linkedId: "s1", status: "Aktif" },
         { id: "u4", username: "tendik", password: "tendik123", role: "tendik", name: "Herman Wijaya, S.E", linkedId: "t1", status: "Aktif" },
         { id: "u5", username: "kepsek", password: "kepsek123", role: "kepsek", name: "Drs. Yohanes Bria, M.Pd", linkedId: "ks1", status: "Aktif" },
       ],
@@ -893,6 +890,10 @@ const DB = (function () {
         data.tahunAjaranList = data.tahunAjaranList.map((item) => ({ ...item, aktif: item.tahunAjaran === data.settings.tahunAjaran }));
         changed = true;
       }
+      // Aplikasi operasional ini tidak menyediakan akun maupun peran Siswa.
+      // Data siswa tetap tersimpan sebagai data induk dan transaksi akademik.
+      const studentAccounts = (data.users || []).filter((user) => user.role === "siswa");
+      if (studentAccounts.length) { data.users = data.users.filter((user) => user.role !== "siswa"); changed = true; }
       // Tambahkan akun demo baru tanpa mengganti akun maupun kata sandi yang sudah ada.
       ["tendik", "kepsek"].forEach((username) => {
         if (data.users && !data.users.some((user) => user.username === username)) {
@@ -1159,7 +1160,7 @@ function confirmDialog({ title, message, confirmText = "Ya", cancelText = "Batal
    4) NAVIGATION & ROUTER
    --------------------------------------------------------- */
 const NAV_ITEMS = [
-  { key: "dashboard", icon: "📊", label: "Dashboard", roles: ["admin", "guru", "tendik", "kepsek", "siswa"] },
+  { key: "dashboard", icon: "📊", label: "Dashboard", roles: ["admin", "guru", "tendik", "kepsek"] },
   { key: "siswa", icon: "🧑‍🎓", label: "Data Siswa", roles: ["admin", "guru"], adminGroup: true },
   { key: "guru", icon: "🧑‍🏫", label: "Data Guru", roles: ["admin"], adminGroup: true },
   { key: "tendik", icon: "🧰", label: "Tenaga Pendidik", roles: ["admin"], adminGroup: true },
@@ -1169,9 +1170,6 @@ const NAV_ITEMS = [
   { key: "jurnal-mengajar", icon: "📚", label: "Jurnal Mengajar", roles: ["admin", "guru"], guruMapelGroup: true },
   { key: "absensi-siswa", icon: "✅", label: "Absensi Siswa", roles: ["admin", "guru"], guruMapelGroup: true },
   { key: "input-nilai", icon: "✍️", label: "Input Nilai", roles: ["admin", "guru"], guruMapelGroup: true },
-
-  { key: "nilai-saya", icon: "📝", label: "Nilai Saya", roles: ["siswa"], siswaInfoGroup: true },
-  { key: "kehadiran-saya", icon: "🗓️", label: "Kehadiran Saya", roles: ["siswa"], siswaInfoGroup: true },
 
   { key: "wali-ringkasan", icon: "🏫", label: "Ringkasan Kelas", roles: ["admin", "guru"], waliKelasGroup: true },
   { key: "wali-siswa", icon: "🧑‍🎓", label: "Siswa Binaan", roles: ["admin", "guru"], waliKelasGroup: true },
@@ -1199,8 +1197,8 @@ const NAV_ITEMS = [
   { key: "kepsek-sarpras", icon: "🏢", label: "Monitoring Sarpras", roles: ["admin", "kepsek"], kepsekGroup: true },
   { key: "kepsek-laporan", icon: "🗒️", label: "Laporan Sekolah", roles: ["admin", "kepsek"], kepsekGroup: true },
 
-  { key: "pengumuman", icon: "📣", label: "Pengumuman", roles: ["admin", "guru", "siswa"], adminGroup: true },
-  { key: "profil", icon: "👤", label: "Profil Saya", roles: ["guru", "tendik", "kepsek", "siswa"] },
+  { key: "pengumuman", icon: "📣", label: "Pengumuman", roles: ["admin", "guru"], adminGroup: true },
+  { key: "profil", icon: "👤", label: "Profil Saya", roles: ["guru", "tendik", "kepsek"] },
   { key: "pengaturan", icon: "⚙️", label: "Pengaturan", roles: ["admin"], adminGroup: true },
 ];
 
@@ -1208,14 +1206,13 @@ const SIDEBAR_GROUPS = [
   { id: "guruMapelGroup", flag: "guruMapelGroup", label: "Guru Mata Pelajaran", icon: "🧑‍🏫", roles: ["admin", "guru"] },
   { id: "waliKelasGroup", flag: "waliKelasGroup", label: "Wali Kelas", icon: "👩‍🏫", roles: ["admin", "guru"], isVisible: () => session.role === "admin" || !!(DB.findById("guru", session.linkedId) || {}).waliKelas },
   { id: "perpustakaanGroup", flag: "perpustakaanGroup", label: "Perpustakaan", icon: "📖", roles: ["admin", "guru"] },
-  { id: "siswaInfoGroup", flag: "siswaInfoGroup", label: "Informasi Akademik", icon: "🎒", roles: ["siswa"] },
   { id: "tuGroup", flag: "tuGroup", label: "TU & Persuratan Digital", icon: "✉️", roles: ["admin", "tendik"] },
   { id: "sarprasGroup", flag: "sarprasGroup", label: "Sarana & Prasarana", icon: "🏗️", roles: ["admin", "tendik"] },
   { id: "kepsekGroup", flag: "kepsekGroup", label: "Kepala Sekolah", icon: "👔", roles: ["admin", "kepsek"] },
   { id: "adminGroup", flag: "adminGroup", label: "Administrator", icon: "🛠️", roles: ["admin"] },
 ];
 
-const ROLE_LABEL = { admin: "Administrator", guru: "Guru", tendik: "Tenaga Pendidik", kepsek: "Kepala Sekolah", siswa: "Siswa" };
+const ROLE_LABEL = { admin: "Administrator", guru: "Guru", tendik: "Tenaga Pendidik", kepsek: "Kepala Sekolah" };
 const PAGE_META = {
   dashboard: { title: "Dashboard", sub: "Ringkasan data sekolah hari ini" },
   siswa: { title: "Data Siswa", sub: "Kelola data induk siswa SMP Hulnani" },
@@ -1223,8 +1220,6 @@ const PAGE_META = {
   tendik: { title: "Tenaga Pendidik", sub: "Kelola data tenaga kependidikan (staf non-guru)" },
   kelas: { title: "Data Kelas", sub: "Kelola rombongan belajar (rombel) sekolah" },
   "jurnal-mengajar": { title: "Jurnal Mengajar", sub: "Catat materi dan aktivitas pembelajaran setiap pertemuan" },
-  "nilai-saya": { title: "Nilai Saya", sub: "Pantau hasil penilaian mata pelajaran Anda" },
-  "kehadiran-saya": { title: "Kehadiran Saya", sub: "Pantau riwayat kehadiran Anda di sekolah" },
   "absensi-siswa": { title: "Absensi Siswa", sub: "Catat kehadiran siswa per mata pelajaran" },
   "input-nilai": { title: "Input Nilai", sub: "Input dan kelola nilai siswa pada mata pelajaran yang diampu" },
 
@@ -1296,7 +1291,7 @@ function buildSidebarNav() {
   const currentKey = (window.location.hash || "#dashboard").replace("#", "");
   const visibleGroups = SIDEBAR_GROUPS.filter((group) => group.roles.includes(session.role) && (!group.isVisible || group.isVisible()));
   // Item grup yang tidak berlaku untuk peran saat ini tetap tampil datar;
-  // contohnya Data Siswa dan Pengumuman bagi Guru/Siswa.
+  // contohnya Data Siswa dan Pengumuman bagi Guru.
   const regularItems = items.filter((item) => !visibleGroups.some((group) => item[group.flag]));
 
   let navHtml = `<div class="sidebar-section-title">Menu Utama</div>` + regularItems.map(linkHtml).join("");
@@ -1357,8 +1352,6 @@ const ROUTES = {
   "manajemen-pengguna": renderManajemenPengguna,
   kelas: renderKelas,
   "jurnal-mengajar": renderJurnalMengajar,
-  "nilai-saya": renderNilaiSaya,
-  "kehadiran-saya": renderKehadiranSaya,
   "absensi-siswa": renderAbsensiSiswaMapel,
   "input-nilai": renderInputNilaiMapel,
   "wali-ringkasan": renderWaliRingkasan,
@@ -1503,17 +1496,6 @@ function renderDashboard() {
       <div class="stat-card"><div class="stat-info"><div class="label">Guru Aktif</div><div class="value">${guru.filter((g) => g.status === "Aktif").length}</div></div><div class="stat-icon icon-purple">🧑‍🏫</div></div>
       <div class="stat-card"><div class="stat-info"><div class="label">Kehadiran Hari Ini</div><div class="value">${persenHadir}%</div><div class="delta">${hadirHariIni} hadir tercatat</div></div><div class="stat-icon icon-green">✅</div></div>
       <div class="stat-card"><div class="stat-info"><div class="label">Rata-rata Nilai</div><div class="value">${rataRataNilai}</div><div class="delta">Semester ${settings.semester}</div></div><div class="stat-icon icon-orange">🎓</div></div>`;
-  } else {
-    const me = DB.findById("siswa", session.linkedId) || {};
-    const myNilai = nilai.filter(n => n.siswaId === session.linkedId);
-    const myAvg = myNilai.length ? Math.round(myNilai.reduce((s,n)=>s+Number(n.nilai),0)/myNilai.length) : 0;
-    const myAbsen = absensi.filter(a => a.siswaId === session.linkedId);
-    const myHadir = myAbsen.filter(a => a.status === "Hadir").length;
-    statCardsHtml = `
-      <div class="stat-card"><div class="stat-info"><div class="label">Kelas</div><div class="value" style="font-size:20px;">${me.kelas || "-"}</div></div><div class="stat-icon icon-blue">🏫</div></div>
-      <div class="stat-card"><div class="stat-info"><div class="label">Rata-rata Nilai</div><div class="value">${myAvg}</div></div><div class="stat-icon icon-purple">📝</div></div>
-      <div class="stat-card"><div class="stat-info"><div class="label">Kehadiran</div><div class="value">${myAbsen.length ? Math.round((myHadir/myAbsen.length)*100) : 0}%</div><div class="delta">${myHadir} hadir dari ${myAbsen.length} tercatat</div></div><div class="stat-icon icon-green">🗓️</div></div>
-      <div class="stat-card"><div class="stat-info"><div class="label">Status</div><div class="value" style="font-size:18px;">${me.status || "-"}</div></div><div class="stat-icon icon-orange">✅</div></div>`;
   }
 
   const recentAbsen = [...absensi].sort((a,b) => b.tanggal.localeCompare(a.tanggal)).slice(0, 6);
@@ -1526,8 +1508,8 @@ function renderDashboard() {
 
   const annHtml = [...pengumuman].sort((a,b)=>b.tanggal.localeCompare(a.tanggal)).slice(0,3).map(p => `
     <div class="mini-announce"><h4>${escapeHtml(p.judul)}</h4><p>${formatDate(p.tanggal)} • ${escapeHtml(p.kategori)}</p></div>`).join("") || `<div class="empty-state"><div class="ic">📣</div>Belum ada pengumuman.</div>`;
-  const activityRoute = ["admin", "guru", "siswa"].includes(session.role) ? "absensi" : session.role === "tendik" ? "tu-surat-masuk" : "kepsek-kehadiran";
-  const infoRoute = ["admin", "guru", "siswa"].includes(session.role) ? "pengumuman" : session.role === "tendik" ? "tu-surat-masuk" : "kepsek-dashboard";
+  const activityRoute = ["admin", "guru"].includes(session.role) ? "wali-absensi" : session.role === "tendik" ? "tu-surat-masuk" : "kepsek-kehadiran";
+  const infoRoute = ["admin", "guru"].includes(session.role) ? "pengumuman" : session.role === "tendik" ? "tu-surat-masuk" : "kepsek-dashboard";
 
   content.innerHTML = `
     <div class="stat-grid">${statCardsHtml}</div>
@@ -1961,28 +1943,6 @@ function renderKepsekLaporan() {
 }
 
 /* ---- INFORMASI MANDIRI SISWA ---- */
-function renderNilaiSaya() {
-  const content = document.getElementById("pageContent");
-  const nilai = recordsForViewedPeriod("nilaiMapel").filter((item) => item.siswaId === session.linkedId).sort((a, b) => a.mapelId.localeCompare(b.mapelId));
-  const mapel = DB.get("mapel");
-  const average = nilai.length ? Math.round(nilai.reduce((total, item) => total + Number(item.nilai), 0) / nilai.length) : 0;
-  const belowKkm = nilai.filter((item) => { const m = mapel.find((itemMapel) => itemMapel.id === item.mapelId); return m && Number(item.nilai) < Number(m.kkm); }).length;
-  const rows = nilai.map((item) => {
-    const m = mapel.find((itemMapel) => itemMapel.id === item.mapelId) || {};
-    const lulus = Number(item.nilai) >= Number(m.kkm || 75);
-    return `<tr><td>${escapeHtml(m.nama || "-")}</td><td>${escapeHtml(item.jenis)}</td><td>${lulus ? `<span class="badge badge-green">${item.nilai}</span>` : `<span class="badge badge-red">${item.nilai}</span>`}</td><td>${m.kkm || "-"}</td><td>${lulus ? supportBadge("Tuntas") : supportBadge("Perlu Bimbingan")}</td><td>${escapeHtml(item.semester)} ${escapeHtml(item.tahunAjaran)}</td></tr>`;
-  }).join("");
-  content.innerHTML = `<div class="stat-grid" style="margin-bottom:16px;"><div class="stat-card"><div class="stat-info"><div class="label">Nilai Tercatat</div><div class="value">${nilai.length}</div></div><div class="stat-icon icon-blue">📝</div></div><div class="stat-card"><div class="stat-info"><div class="label">Rata-rata Nilai</div><div class="value">${average}</div></div><div class="stat-icon icon-purple">🎓</div></div><div class="stat-card"><div class="stat-info"><div class="label">Perlu Bimbingan</div><div class="value">${belowKkm}</div></div><div class="stat-icon ${belowKkm ? "icon-orange" : "icon-green"}">${belowKkm ? "📚" : "✅"}</div></div></div>${nilai.length ? `<div class="table-wrap"><table><thead><tr><th>Mata Pelajaran</th><th>Jenis</th><th>Nilai</th><th>KKM</th><th>Status</th><th>Periode</th></tr></thead><tbody>${rows}</tbody></table></div>` : pageEmpty("📝", "Belum ada nilai mata pelajaran yang dipublikasikan.")}`;
-}
-function renderKehadiranSaya() {
-  const content = document.getElementById("pageContent");
-  const data = [...recordsForViewedPeriod("absensi")].filter((item) => item.siswaId === session.linkedId).sort((a, b) => b.tanggal.localeCompare(a.tanggal));
-  const total = data.length;
-  const count = (status) => data.filter((item) => item.status === status).length;
-  const rows = data.map((item) => `<tr><td>${formatDate(item.tanggal)}</td><td>${supportBadge(item.status)}</td></tr>`).join("");
-  content.innerHTML = `<div class="stat-grid" style="margin-bottom:16px;">${["Hadir", "Sakit", "Izin", "Alpa"].map((status) => `<div class="stat-card"><div class="stat-info"><div class="label">${status}</div><div class="value">${count(status)}</div><div class="delta">${total ? Math.round((count(status) / total) * 100) : 0}% dari catatan</div></div><div class="stat-icon ${status === "Hadir" ? "icon-green" : status === "Alpa" ? "icon-red" : "icon-orange"}">${status === "Hadir" ? "✅" : status === "Alpa" ? "❌" : "📅"}</div></div>`).join("")}</div>${total ? `<div class="table-wrap"><table><thead><tr><th>Tanggal</th><th>Status Kehadiran</th></tr></thead><tbody>${rows}</tbody></table></div>` : pageEmpty("🗓️", "Belum ada riwayat kehadiran.")}`;
-}
-
 /* ---- DATA SISWA ---- */
 const siswaState = { searchTerm: "", filterKelas: "", currentPage: 1, pageSize: 8 };
 
@@ -2124,7 +2084,6 @@ window.viewSiswa = function(id) {
 };
 window.deleteSiswa = function(id) {
   const s = DB.findById("siswa", id);
-  if (DB.get("users").some((user) => user.role === "siswa" && user.linkedId === id)) { showToast("Hapus akun login siswa ini terlebih dahulu melalui Manajemen Pengguna.", "error"); return; }
   confirmDialog({
     title: "Hapus Data Siswa?",
     message: `Data siswa "${s ? s.nama : ""}" akan dihapus permanen dan tidak dapat dikembalikan.`,
@@ -2799,36 +2758,6 @@ function renderProfil() {
       </div>`;
   }
 
-  function renderSiswaProfile() {
-    const s = DB.findById("siswa", session.linkedId);
-    if (!s) return `<div class="card"><div class="empty-state">Data siswa tidak ditemukan.</div></div>`;
-    return `
-      <div class="grid-2">
-        <div class="card">
-          <div class="flex gap-12" style="align-items:center; margin-bottom:20px;">
-            <div class="avatar" style="width:64px;height:64px;font-size:20px;">${initials(s.nama)}</div>
-            <div><div style="font-weight:800; font-size:18px;">${escapeHtml(s.nama)}</div><div class="text-muted" style="font-size:13px;">Kelas ${escapeHtml(s.kelas)} • NIS ${escapeHtml(s.nis)}</div></div>
-          </div>
-          <table style="width:100%; font-size:13.5px;">
-            <tr><td class="text-muted" style="padding:8px 0; width:38%;">Jenis Kelamin</td><td>${s.jk==='L'?'Laki-laki':'Perempuan'}</td></tr>
-            <tr><td class="text-muted" style="padding:8px 0;">Tempat, Tgl Lahir</td><td>${escapeHtml(s.tempatLahir||'-')}, ${formatDate(s.tglLahir)}</td></tr>
-            <tr><td class="text-muted" style="padding:8px 0;">Alamat</td><td>${escapeHtml(s.alamat||'-')}</td></tr>
-            <tr><td class="text-muted" style="padding:8px 0;">No. Telepon</td><td>${escapeHtml(s.telepon||'-')}</td></tr>
-            <tr><td class="text-muted" style="padding:8px 0;">Orang Tua/Wali</td><td>${escapeHtml(s.namaOrtu||'-')}</td></tr>
-            <tr><td class="text-muted" style="padding:8px 0;">Status</td><td><span class="badge badge-green">${escapeHtml(s.status)}</span></td></tr>
-          </table>
-        </div>
-        <div class="card">
-          <div class="card-head"><div><h3>Ganti Kata Sandi</h3><p>Perbarui kata sandi login Anda</p></div></div>
-          <form id="passForm">
-            <div class="field"><label>Kata Sandi Baru</label><input type="password" id="newPass" minlength="4" required /></div>
-            <div class="field"><label>Konfirmasi Kata Sandi</label><input type="password" id="confPass" minlength="4" required /></div>
-            <button type="submit" class="btn btn-blue" style="width:100%;">🔒 Perbarui Kata Sandi</button>
-          </form>
-        </div>
-      </div>`;
-  }
-
   function renderStaffProfile(collection, label) {
     const person = DB.findById(collection, session.linkedId);
     if (!person) return `<div class="card"><div class="empty-state">Data profil tidak ditemukan.</div></div>`;
@@ -2848,7 +2777,7 @@ function renderProfil() {
       </div>`;
   }
 
-  content.innerHTML = session.role === "guru" ? renderGuruProfile() : session.role === "tendik" ? renderStaffProfile("tendik", "Tenaga Pendidik") : session.role === "kepsek" ? renderStaffProfile("kepsek", "Kepala Sekolah") : renderSiswaProfile();
+  content.innerHTML = session.role === "guru" ? renderGuruProfile() : session.role === "tendik" ? renderStaffProfile("tendik", "Tenaga Pendidik") : renderStaffProfile("kepsek", "Kepala Sekolah");
 
   const passForm = document.getElementById("passForm");
   if (passForm) {
@@ -2865,8 +2794,8 @@ function renderProfil() {
 }
 
 /* ---- MANAJEMEN PENGGUNA & HAK AKSES (admin) ---- */
-const MANAGEABLE_ROLES = ["admin", "guru", "tendik", "kepsek", "siswa"];
-const USER_ROLE_SOURCES = { guru: "guru", tendik: "tendik", kepsek: "kepsek", siswa: "siswa" };
+const MANAGEABLE_ROLES = ["admin", "guru", "tendik", "kepsek"];
+const USER_ROLE_SOURCES = { guru: "guru", tendik: "tendik", kepsek: "kepsek" };
 
 function userStatusBadge(status) {
   return `<span class="badge ${status === "Nonaktif" ? "badge-red" : "badge-green"}">${escapeHtml(status || "Aktif")}</span>`;
@@ -2941,7 +2870,7 @@ function renderManajemenPengguna() {
 
   content.innerHTML = `
     <div class="card" style="margin-bottom:16px; padding:14px 18px; border-left:4px solid var(--blue-500);">
-      <div class="text-muted" style="font-size:13px; line-height:1.6;"><b style="color:var(--text-main);">🔐 Kontrol Akses:</b> Buat akun untuk Guru, Tenaga Pendidik, Kepala Sekolah, Siswa, atau Administrator. Setiap akun hanya dapat dihubungkan ke satu data profil dan peran menentukan menu yang dapat diakses.</div>
+      <div class="text-muted" style="font-size:13px; line-height:1.6;"><b style="color:var(--text-main);">🔐 Kontrol Akses:</b> Buat akun untuk Guru, Tenaga Pendidik, Kepala Sekolah, atau Administrator. Setiap akun hanya dapat dihubungkan ke satu data profil dan peran menentukan menu yang dapat diakses.</div>
     </div>
     <div class="stat-grid" style="margin-bottom:16px;">
       <div class="stat-card"><div class="stat-info"><div class="label">Akun Aktif</div><div class="value">${allUsers.filter((user) => user.status !== "Nonaktif").length}</div></div><div class="stat-icon icon-blue">👤</div></div>
@@ -3112,7 +3041,7 @@ function renderPengaturan() {
     </div>
     <div class="card" style="margin-top:18px;">
       <div class="card-head"><div><h3>Akun & Hak Akses</h3><p>Kelola username, kata sandi, status akun, dan peran pengguna sekolah</p></div><a class="btn btn-outline btn-sm" href="#manajemen-pengguna">🔐 Buka Manajemen Pengguna</a></div>
-      <p class="text-muted" style="font-size:13px; margin:0; line-height:1.6;">Gunakan menu <b>Manajemen Pengguna</b> untuk menghubungkan akun login dengan data Guru, Tenaga Pendidik, Kepala Sekolah, atau Siswa serta menentukan hak aksesnya.</p>
+      <p class="text-muted" style="font-size:13px; margin:0; line-height:1.6;">Gunakan menu <b>Manajemen Pengguna</b> untuk menghubungkan akun login dengan data Guru, Tenaga Pendidik, atau Kepala Sekolah serta menentukan hak aksesnya.</p>
     </div>`;
 
   document.getElementById("settingsForm").addEventListener("submit", (e) => {
@@ -3232,7 +3161,6 @@ document.getElementById("siswaForm").addEventListener("submit", (e) => {
     status: document.getElementById("fStatus").value,
   };
   const savedSiswa = id ? DB.update("siswa", id, payload) : DB.insert("siswa", payload);
-  if (savedSiswa) syncLinkedUserName("siswa", savedSiswa.id, savedSiswa.nama);
   showToast(id ? "Data siswa berhasil diperbarui." : "Data siswa berhasil ditambahkan.", "success");
   closeModal("siswaModal");
   renderSiswa();

@@ -12,20 +12,19 @@ Cukup buka file `sistem-digital-smp-hulnani.html` langsung dengan browser (doubl
 |--------|----------|-----------|
 | Admin  | admin    | admin123  |
 | Guru   | guru     | guru123   |
-| Siswa  | siswa    | siswa123  |
 | Tenaga Pendidik | tendik | tendik123 |
 | Kepala Sekolah | kepsek | kepsek123 |
 
 ## Fitur
 
-- **Login multi-peran**: Admin, Guru, Tenaga Pendidik, Kepala Sekolah, dan Siswa (sesi disimpan di `sessionStorage`).
+- **Login multi-peran**: Admin, Guru, Tenaga Pendidik, dan Kepala Sekolah (sesi disimpan di `sessionStorage`).
 - **Dashboard** ringkasan data sesuai peran pengguna.
 - **Arsip Tahun Ajaran & Semester** — seluruh transaksi operasional diberi penanda tahun ajaran dan semester. Pilih periode pada selector di topbar untuk membuka data lama; tampilan arsip bersifat baca saja agar riwayat tidak berubah.
 - **Menu "Administrator"** (khusus Admin) — menu induk collapsible di sidebar yang mengelompokkan submenu manajemen data:
   - **Data Siswa** — CRUD lengkap, pencarian, filter kelas, dan detail siswa.
   - **Data Guru** — CRUD lengkap.
   - **Tenaga Pendidik** — CRUD data tenaga kependidikan non-guru (TU, Pustakawan, Laboran, Satpam, Petugas Kebersihan, dll).
-  - **Manajemen Pengguna** — buat, ubah, nonaktifkan, atau hapus akun login; atur username, kata sandi, serta peran Administrator, Guru, Tenaga Pendidik, Kepala Sekolah, dan Siswa; tautkan tiap akun ke data profilnya.
+  - **Manajemen Pengguna** — buat, ubah, nonaktifkan, atau hapus akun login; atur username, kata sandi, serta peran Administrator, Guru, Tenaga Pendidik, atau Kepala Sekolah; tautkan tiap akun ke data profilnya.
   - **Data Kelas** — kelola rombongan belajar & wali kelas.
   - **Pengumuman** — buat & kelola pengumuman sekolah.
   - **Pengaturan** — profil sekolah, manajemen tahun ajaran aktif, tambah tahun ajaran baru, ekspor/impor data (backup JSON), dan reset data.
@@ -34,7 +33,7 @@ Cukup buka file `sistem-digital-smp-hulnani.html` langsung dengan browser (doubl
   - **Absensi Siswa** — catat kehadiran siswa per kelas, tanggal, guru, dan mata pelajaran.
   - **Input Nilai** — input nilai per siswa, lengkap dengan jenis penilaian dan indikator KKM.
   - Admin dapat mengakses seluruh data; Guru hanya mengelola jurnal, absensi, dan nilai miliknya sendiri pada mapel yang diampu.
-- **Informasi Akademik Siswa** — siswa memiliki menu mandiri **Nilai Saya** dan **Kehadiran Saya**. Riwayat nilai lama dimigrasikan otomatis ke Input Nilai Mata Pelajaran.
+- **Data Akademik Siswa** — nilai dan kehadiran siswa dikelola oleh Guru melalui modul Guru Mata Pelajaran serta Wali Kelas. Riwayat nilai lama dimigrasikan otomatis ke Input Nilai Mata Pelajaran.
 - **Wali Kelas** (Admin/Guru) — Ringkasan Kelas, Siswa Binaan, Absensi & Rekap, serta Catatan Wali Kelas. Guru hanya melihat kelas yang diwalikan; Admin dapat memantau seluruh kelas.
 - **Perpustakaan** (Admin/Guru) — Koleksi Buku (CRUD), Peminjaman & Pengembalian, Anggota dari data Siswa/Guru, serta laporan sirkulasi. Guru bertugas sebagai petugas perpustakaan.
 - **TU & Persuratan Digital** (Admin/Tenaga Pendidik) — Surat Masuk, Surat Keluar, Disposisi & Arsip Digital, serta laporan persuratan. Tenaga Pendidik bertugas mengelola operasional persuratan.
@@ -42,7 +41,7 @@ Cukup buka file `sistem-digital-smp-hulnani.html` langsung dengan browser (doubl
 - **Kepala Sekolah** (Admin/Kepala Sekolah) — Dashboard monitoring, akademik, kehadiran, Sarpras, dan laporan sekolah dalam mode baca saja.
 - **Data Kepala Sekolah** — akun Kepala Sekolah menggunakan data contoh yang konsisten dengan nama Kepala Sekolah pada Pengaturan sekolah.
 - **Otomasi operasional** — stok buku dan unit aset tersedia dihitung otomatis berdasarkan pinjaman aktif; pengembalian langsung memperbarui ketersediaan; status surat masuk disinkronkan otomatis dengan disposisi; rekap dashboard dan monitoring mengambil data transaksi terbaru.
-- **Profil Saya** — Guru, Tenaga Pendidik, Kepala Sekolah, dan Siswa dapat melihat data pribadi & mengganti kata sandi.
+- **Profil Saya** — Guru, Tenaga Pendidik, dan Kepala Sekolah dapat melihat data pribadi & mengganti kata sandi.
 
 > Catatan: menu lama **Nilai Akademik** dan **Absensi** telah dihapus dari navigasi. Nilai dikelola dari **Guru Mata Pelajaran → Input Nilai**, sedangkan absensi harian dikelola dari **Wali Kelas → Absensi & Rekap**. Guru yang belum ditetapkan sebagai wali kelas tidak melihat grup Wali Kelas.
 
@@ -57,7 +56,7 @@ Riwayat transaksi yang sudah ada dari versi sebelumnya akan otomatis diberi peri
 
 ## Manajemen Pengguna dan Role
 
-Admin dapat membuka **Administrator → Manajemen Pengguna** untuk membuat atau mengubah akun login. Pilih peran yang sesuai lalu hubungkan akun dengan data Guru, Tenaga Pendidik, Kepala Sekolah, atau Siswa; nama akun akan mengikuti profil yang dipilih. Akun Administrator dapat dibuat tanpa profil pegawai. Kata sandi dapat diganti melalui tombol kunci tanpa menampilkannya di tabel, dan akun dapat dinonaktifkan tanpa menghapus data profil. Sistem menjaga agar selalu ada minimal satu Administrator aktif serta mencegah satu profil dipasangkan ke lebih dari satu akun.
+Admin dapat membuka **Administrator → Manajemen Pengguna** untuk membuat atau mengubah akun login. **Siswa tidak memiliki peran maupun akun login**; data siswa dipakai oleh petugas sekolah untuk pengelolaan akademik dan administrasi. Pilih peran yang sesuai lalu hubungkan akun dengan data Guru, Tenaga Pendidik, atau Kepala Sekolah; nama akun akan mengikuti profil yang dipilih. Akun Administrator dapat dibuat tanpa profil pegawai. Kata sandi dapat diganti melalui tombol kunci tanpa menampilkannya di tabel, dan akun dapat dinonaktifkan tanpa menghapus data profil. Sistem menjaga agar selalu ada minimal satu Administrator aktif serta mencegah satu profil dipasangkan ke lebih dari satu akun.
 
 ## Arsitektur
 
