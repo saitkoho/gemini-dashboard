@@ -20,13 +20,14 @@ Cukup buka file `sistem-digital-smp-hulnani.html` langsung dengan browser (doubl
 
 - **Login multi-peran**: Admin, Guru, Tenaga Pendidik, Kepala Sekolah, dan Siswa (sesi disimpan di `sessionStorage`).
 - **Dashboard** ringkasan data sesuai peran pengguna.
+- **Arsip Tahun Ajaran & Semester** — seluruh transaksi operasional diberi penanda tahun ajaran dan semester. Pilih periode pada selector di topbar untuk membuka data lama; tampilan arsip bersifat baca saja agar riwayat tidak berubah.
 - **Menu "Administrator"** (khusus Admin) — menu induk collapsible di sidebar yang mengelompokkan submenu manajemen data:
   - **Data Siswa** — CRUD lengkap, pencarian, filter kelas, dan detail siswa.
   - **Data Guru** — CRUD lengkap.
   - **Tenaga Pendidik** — CRUD data tenaga kependidikan non-guru (TU, Pustakawan, Laboran, Satpam, Petugas Kebersihan, dll).
   - **Data Kelas** — kelola rombongan belajar & wali kelas.
   - **Pengumuman** — buat & kelola pengumuman sekolah.
-  - **Pengaturan** — profil sekolah, ekspor/impor data (backup JSON), reset data.
+  - **Pengaturan** — profil sekolah, manajemen tahun ajaran aktif, tambah tahun ajaran baru, ekspor/impor data (backup JSON), dan reset data.
 - **Menu "Guru Mata Pelajaran"** (Admin dan Guru) — menu induk collapsible untuk kebutuhan pembelajaran per mapel:
   - **Jurnal Mengajar** — catat tanggal, kelas, mata pelajaran, jam ke, materi yang diajarkan, serta catatan pembelajaran.
   - **Absensi Siswa** — catat kehadiran siswa per kelas, tanggal, guru, dan mata pelajaran.
@@ -44,6 +45,15 @@ Cukup buka file `sistem-digital-smp-hulnani.html` langsung dengan browser (doubl
 
 > Catatan: menu lama **Nilai Akademik** dan **Absensi** telah dihapus dari navigasi. Nilai dikelola dari **Guru Mata Pelajaran → Input Nilai**, sedangkan absensi harian dikelola dari **Wali Kelas → Absensi & Rekap**. Guru yang belum ditetapkan sebagai wali kelas tidak melihat grup Wali Kelas.
 
+## Mengelola Tahun Ajaran dan Arsip
+
+1. Masuk sebagai **Admin**, lalu buka **Administrator → Pengaturan**.
+2. Pada **Tahun Ajaran & Arsip Semester**, masukkan format `YYYY/YYYY` (misalnya `2027/2028`) untuk menambah tahun ajaran baru. Tahun baru awalnya tersimpan sebagai arsip.
+3. Klik **Jadikan Aktif** saat tahun tersebut mulai digunakan. Semester aktif dapat dipilih pada formulir Profil Sekolah. Transaksi baru otomatis tercatat pada periode aktif.
+4. Gunakan selector tahun ajaran/semester di topbar untuk melihat semester berjalan maupun arsip. Ketika periode selain periode aktif dipilih, aplikasi menandainya sebagai **Tampilan Arsip** dan mencegah perubahan transaksi.
+
+Riwayat transaksi yang sudah ada dari versi sebelumnya akan otomatis diberi periode sesuai pengaturan tahun ajaran dan semester yang saat itu tersimpan. Cadangan JSON juga menyertakan katalog tahun ajaran serta seluruh arsip transaksi.
+
 ## Arsitektur
 
 File tunggal ini berbentuk **SPA (Single Page Application)** dengan hash-routing (`#dashboard`, `#siswa`, `#guru`, dst) — berpindah menu tidak memuat ulang halaman, cukup berganti konten di dalam satu dokumen. Struktur kode di dalamnya:
@@ -51,7 +61,7 @@ File tunggal ini berbentuk **SPA (Single Page Application)** dengan hash-routing
 1. **`<style>`** — seluruh stylesheet (layout login, sidebar, topbar, tabel, modal, responsif).
 2. **Markup HTML** — layar login, shell aplikasi (sidebar + topbar + area konten), serta modal form data utama.
 3. **`<script>`** — dibagi menjadi beberapa bagian:
-   - **Data Layer (`DB`)** — akses `localStorage`, data contoh awal (seed), fungsi CRUD generik.
+   - **Data Layer (`DB`)** — akses `localStorage`, data contoh awal (seed), migrasi ringan data lama, katalog tahun ajaran, penanda periode transaksi, dan fungsi CRUD generik.
    - **Auth** — login/logout berbasis `sessionStorage`.
    - **Util** — helper format tanggal, escape HTML, toast, dialog konfirmasi, dsb.
    - **Router** — hash-based routing dengan pembatasan akses per peran.

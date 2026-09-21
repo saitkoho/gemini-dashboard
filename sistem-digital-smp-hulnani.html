@@ -216,6 +216,7 @@ input, select, textarea { font-family: inherit; }
 .topbar .page-sub { font-size: 12.5px; color: var(--text-muted); margin-top: 2px; }
 .hamburger { display: none; border: none; background: var(--bg); width: 38px; height: 38px; border-radius: 8px; font-size: 16px; }
 .topbar-right { display: flex; align-items: center; gap: 16px; }
+.topbar-period { max-width: 176px; padding: 8px 30px 8px 10px; border: 1px solid var(--border); border-radius: 8px; color: var(--text-main); background: #fff; font-size: 12px; font-weight: 600; }
 .icon-btn {
   width: 38px; height: 38px; border-radius: 10px; border: 1px solid var(--border); background: #fff;
   display: flex; align-items: center; justify-content: center; color: var(--text-muted); position: relative; font-size: 15px;
@@ -333,6 +334,7 @@ tbody tr:hover { background: #fafbff; }
   .hamburger { display: flex; align-items: center; justify-content: center; }
   .overlay-backdrop.show { display: block; }
   .topbar-user .name, .topbar-user .role { display: none; }
+  .topbar-period { max-width: 132px; font-size: 11px; }
 }
 @media (max-width: 640px) {
   .stat-grid { grid-template-columns: 1fr; }
@@ -439,6 +441,7 @@ tbody tr:hover { background: #fafbff; }
         </div>
       </div>
       <div class="topbar-right">
+        <select id="periodSelector" class="topbar-period" title="Pilih tahun ajaran dan semester untuk ditampilkan"></select>
         <div class="icon-btn" title="Notifikasi">🔔<span class="dot"></span></div>
         <div class="topbar-user">
           <div class="avatar" id="tbAvatar">?</div>
@@ -613,6 +616,7 @@ tbody tr:hover { background: #fafbff; }
       <div class="modal-body">
         <input type="hidden" id="jurnalId" />
         <div class="form-grid">
+          <div class="field full"><label>Periode Pencatatan</label><input type="text" id="jmPeriod" readonly /></div>
           <div class="field"><label>Guru Mata Pelajaran</label><select id="jmGuru" required></select></div>
           <div class="field"><label>Tanggal</label><input type="date" id="jmTanggal" required /></div>
           <div class="field"><label>Kelas</label><select id="jmKelas" required></select></div>
@@ -641,6 +645,7 @@ tbody tr:hover { background: #fafbff; }
       <div class="modal-body">
         <input type="hidden" id="inNilaiId" />
         <div class="form-grid">
+          <div class="field full"><label>Periode Pencatatan</label><input type="text" id="inPeriod" readonly /></div>
           <div class="field"><label>Guru Mata Pelajaran</label><select id="inGuru" required></select></div>
           <div class="field"><label>Kelas</label><select id="inKelas" required></select></div>
           <div class="field full"><label>Siswa</label><select id="inSiswa" required></select></div>
@@ -698,6 +703,12 @@ tbody tr:hover { background: #fafbff; }
    1) DATA LAYER (localStorage)
    --------------------------------------------------------- */
 const DB_KEY = "smphulnani_db_v1";
+const VIEW_PERIOD_KEY = "smphulnani_view_period_v1";
+const PERIODIZED_COLLECTIONS = [
+  "nilaiMapel", "jurnalMengajar", "absensiMapel", "absensi", "waliCatatan",
+  "peminjamanBuku", "suratMasuk", "suratKeluar", "disposisiSurat",
+  "peminjamanAset", "pemeliharaanAset", "pengumuman",
+];
 
 const DB = (function () {
   function todayOffset(days) {
@@ -718,6 +729,9 @@ const DB = (function () {
         tahunAjaran: "2026/2027",
         semester: "Ganjil",
       },
+      tahunAjaranList: [
+        { id: "ta1", tahunAjaran: "2026/2027", aktif: true, dibuatPada: todayOffset(0) },
+      ],
       users: [
         { id: "u1", username: "admin", password: "admin123", role: "admin", name: "Administrator", linkedId: null },
         { id: "u2", username: "guru", password: "guru123", role: "guru", name: "Budi Santoso, S.Pd", linkedId: "g1" },
@@ -838,10 +852,26 @@ const DB = (function () {
     };
   }
 
+  function prepareSeedData() {
+    const seeded = seedData();
+    PERIODIZED_COLLECTIONS.forEach((collection) => {
+      (seeded[collection] || []).forEach((item) => {
+        item.tahunAjaran = seeded.settings.tahunAjaran;
+        item.semester = seeded.settings.semester;
+        if (["nilaiMapel", "absensiMapel", "absensi", "waliCatatan"].includes(collection) && !item.kelas) {
+          const siswa = seeded.siswa.find((row) => row.id === item.siswaId);
+          if (siswa) item.kelas = siswa.kelas;
+        }
+      });
+    });
+    seeded.migrations = { nilaiKeMapelV1: true };
+    return seeded;
+  }
+
   function load() {
     const raw = localStorage.getItem(DB_KEY);
     if (!raw) {
-      const seeded = seedData();
+      const seeded = prepareSeedData();
       localStorage.setItem(DB_KEY, JSON.stringify(seeded));
       return seeded;
     }
@@ -853,6 +883,16 @@ const DB = (function () {
       Object.keys(defaults).forEach((key) => {
         if (data[key] === undefined) { data[key] = defaults[key]; changed = true; }
       });
+      // Pastikan periode aktif lama tetap tersedia di katalog setelah pembaruan aplikasi.
+      if (!data.tahunAjaranList.some((item) => item.tahunAjaran === data.settings.tahunAjaran)) {
+        data.tahunAjaranList.push({ id: `ta_legacy_${data.settings.tahunAjaran.replace(/\W/g, "")}`, tahunAjaran: data.settings.tahunAjaran, aktif: true, dibuatPada: todayOffset(0) });
+        changed = true;
+      }
+      const activeYears = data.tahunAjaranList.filter((item) => item.aktif);
+      if (activeYears.length !== 1 || !activeYears[0] || activeYears[0].tahunAjaran !== data.settings.tahunAjaran) {
+        data.tahunAjaranList = data.tahunAjaranList.map((item) => ({ ...item, aktif: item.tahunAjaran === data.settings.tahunAjaran }));
+        changed = true;
+      }
       // Tambahkan akun demo baru tanpa mengganti akun maupun kata sandi yang sudah ada.
       ["tendik", "kepsek"].forEach((username) => {
         if (data.users && !data.users.some((user) => user.username === username)) {
@@ -884,11 +924,23 @@ const DB = (function () {
         data.migrations.nilaiKeMapelV1 = true;
         changed = true;
       }
+      // Lengkapi penanda periode pada transaksi versi sebelumnya agar arsip
+      // dapat difilter kembali berdasarkan tahun ajaran dan semester.
+      PERIODIZED_COLLECTIONS.forEach((collection) => {
+        (data[collection] || []).forEach((item) => {
+          if (!item.tahunAjaran) { item.tahunAjaran = data.settings.tahunAjaran; changed = true; }
+          if (!item.semester) { item.semester = data.settings.semester; changed = true; }
+          if (["nilaiMapel", "absensiMapel", "absensi", "waliCatatan"].includes(collection) && !item.kelas) {
+            const siswa = data.siswa.find((row) => row.id === item.siswaId);
+            if (siswa) { item.kelas = siswa.kelas; changed = true; }
+          }
+        });
+      });
       if (changed) localStorage.setItem(DB_KEY, JSON.stringify(data));
       return data;
     }
     catch (e) {
-      const seeded = seedData();
+      const seeded = prepareSeedData();
       localStorage.setItem(DB_KEY, JSON.stringify(seeded));
       return seeded;
     }
@@ -899,7 +951,21 @@ const DB = (function () {
   function setCollection(collection, arr) { const data = load(); data[collection] = arr; save(data); }
   function updateSettings(patch) { const data = load(); data.settings = Object.assign({}, data.settings, patch); save(data); return data.settings; }
   function genId(prefix) { return prefix + "_" + Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
-  function insert(collection, item) { const data = load(); if (!item.id) item.id = genId(collection[0]); data[collection].push(item); save(data); return item; }
+  function insert(collection, item) {
+    const data = load();
+    if (PERIODIZED_COLLECTIONS.includes(collection)) {
+      item.tahunAjaran = item.tahunAjaran || data.settings.tahunAjaran;
+      item.semester = item.semester || data.settings.semester;
+      if (["nilaiMapel", "absensiMapel", "absensi", "waliCatatan"].includes(collection) && !item.kelas) {
+        const siswa = data.siswa.find((row) => row.id === item.siswaId);
+        if (siswa) item.kelas = siswa.kelas;
+      }
+    }
+    if (!item.id) item.id = genId(collection[0]);
+    data[collection].push(item);
+    save(data);
+    return item;
+  }
   function update(collection, id, patch) {
     const data = load();
     const idx = data[collection].findIndex((x) => x.id === id);
@@ -941,8 +1007,70 @@ const Auth = (function () {
 })();
 
 /* ---------------------------------------------------------
-   3) UTIL
+   3) PERIODE AKADEMIK & UTIL
    --------------------------------------------------------- */
+function getActiveAcademicPeriod() {
+  const settings = DB.get("settings");
+  return { tahunAjaran: settings.tahunAjaran, semester: settings.semester };
+}
+function getViewAcademicPeriod() {
+  const active = getActiveAcademicPeriod();
+  try {
+    const stored = JSON.parse(sessionStorage.getItem(VIEW_PERIOD_KEY));
+    const isValidYear = stored && DB.get("tahunAjaranList").some((item) => item.tahunAjaran === stored.tahunAjaran);
+    if (isValidYear && ["Ganjil", "Genap"].includes(stored.semester)) return stored;
+  } catch (e) { /* gunakan periode aktif */ }
+  return active;
+}
+function isViewingActivePeriod() {
+  const view = getViewAcademicPeriod();
+  const active = getActiveAcademicPeriod();
+  return view.tahunAjaran === active.tahunAjaran && view.semester === active.semester;
+}
+function isInViewedPeriod(item) {
+  const period = getViewAcademicPeriod();
+  return item && item.tahunAjaran === period.tahunAjaran && item.semester === period.semester;
+}
+function recordsForViewedPeriod(collection) { return DB.get(collection).filter(isInViewedPeriod); }
+function currentPeriodLabel() {
+  const period = getViewAcademicPeriod();
+  return `${period.tahunAjaran} • ${period.semester}`;
+}
+function periodContextBadge() {
+  return `<span class="badge badge-blue">Periode: ${escapeHtml(currentPeriodLabel())}</span>`;
+}
+function requireActivePeriodForWrite() {
+  if (isViewingActivePeriod()) return true;
+  showToast("Arsip periode lama bersifat baca saja. Pilih periode aktif untuk mengubah data.", "error");
+  return false;
+}
+function refreshPeriodSelector() {
+  const select = document.getElementById("periodSelector");
+  if (!select) return;
+  const active = getActiveAcademicPeriod();
+  const view = getViewAcademicPeriod();
+  const years = [...DB.get("tahunAjaranList")].sort((a, b) => b.tahunAjaran.localeCompare(a.tahunAjaran));
+  select.innerHTML = years.flatMap((year) => ["Ganjil", "Genap"].map((semester) => {
+    const value = `${year.tahunAjaran}|${semester}`;
+    const activeMark = year.tahunAjaran === active.tahunAjaran && semester === active.semester ? " (Aktif)" : "";
+    return `<option value="${escapeHtml(value)}" ${year.tahunAjaran === view.tahunAjaran && semester === view.semester ? "selected" : ""}>${escapeHtml(year.tahunAjaran)} • ${semester}${activeMark}</option>`;
+  })).join("");
+  select.onchange = () => {
+    const [tahunAjaran, semester] = select.value.split("|");
+    sessionStorage.setItem(VIEW_PERIOD_KEY, JSON.stringify({ tahunAjaran, semester }));
+    router();
+  };
+}
+function renderPeriodArchiveNotice() {
+  if (isViewingActivePeriod()) return;
+  const content = document.getElementById("pageContent");
+  if (!content || content.querySelector(".period-archive-notice")) return;
+  const note = document.createElement("div");
+  note.className = "card period-archive-notice";
+  note.style.cssText = "margin-bottom:16px; padding:13px 16px; border-left:4px solid var(--warning);";
+  note.innerHTML = `<div class="text-muted" style="font-size:13px;"><b style="color:var(--text-main);">📚 Tampilan Arsip:</b> ${escapeHtml(currentPeriodLabel())}. Data periode ini dapat ditinjau, tetapi tidak dapat diubah untuk menjaga riwayat.</div>`;
+  content.prepend(note);
+}
 function initials(name) {
   if (!name) return "?";
   const parts = name.replace(/[.,]/g, "").trim().split(/\s+/);
@@ -1204,6 +1332,8 @@ function router() {
 
   const renderFn = ROUTES[key];
   if (renderFn) renderFn();
+  refreshPeriodSelector();
+  renderPeriodArchiveNotice();
 }
 
 const ROUTES = {
@@ -1292,9 +1422,9 @@ function renderDashboard() {
   const siswa = DB.get("siswa");
   const guru = DB.get("guru");
   const kelas = DB.get("kelas");
-  const absensi = DB.get("absensi");
-  const nilai = DB.get("nilaiMapel");
-  const pengumuman = DB.get("pengumuman");
+  const absensi = recordsForViewedPeriod("absensi");
+  const nilai = recordsForViewedPeriod("nilaiMapel");
+  const pengumuman = recordsForViewedPeriod("pengumuman");
   const settings = DB.get("settings");
 
   const today = new Date().toISOString().slice(0, 10);
@@ -1346,7 +1476,7 @@ function renderDashboard() {
       </div>`;
   } else if (session.role === "tendik") {
     const me = DB.findById("tendik", session.linkedId) || {};
-    const suratAktif = DB.get("suratMasuk").filter((s) => s.status !== "Selesai").length;
+    const suratAktif = recordsForViewedPeriod("suratMasuk").filter((s) => s.status !== "Selesai").length;
     const asetPerluRawat = DB.get("inventaris").filter((i) => i.kondisi !== "Baik").length;
     statCardsHtml = `
       <div class="stat-card"><div class="stat-info"><div class="label">Unit Kerja</div><div class="value" style="font-size:18px;">${escapeHtml(me.unit || "-")}</div><div class="delta">${escapeHtml(me.jabatan || "Tenaga Pendidik")}</div></div><div class="stat-icon icon-blue">🧰</div></div>
@@ -1430,24 +1560,25 @@ function memberName(type, id) {
 }
 function bukuTersedia(bukuId, excludePeminjamanId = "") {
   const buku = DB.findById("buku", bukuId);
-  const dipinjam = DB.get("peminjamanBuku").filter((item) => item.id !== excludePeminjamanId && item.bukuId === bukuId && item.status === "Dipinjam").length;
+  const dipinjam = recordsForViewedPeriod("peminjamanBuku").filter((item) => item.id !== excludePeminjamanId && item.bukuId === bukuId && item.status === "Dipinjam").length;
   return Math.max(0, Number(buku ? buku.stok : 0) - dipinjam);
 }
 function asetTersedia(inventarisId, excludePeminjamanId = "") {
   const aset = DB.findById("inventaris", inventarisId);
-  const dipinjam = DB.get("peminjamanAset").filter((item) => item.id !== excludePeminjamanId && item.inventarisId === inventarisId && item.status === "Dipinjam").length;
+  const dipinjam = recordsForViewedPeriod("peminjamanAset").filter((item) => item.id !== excludePeminjamanId && item.inventarisId === inventarisId && item.status === "Dipinjam").length;
   return Math.max(0, Number(aset ? aset.jumlah : 0) - dipinjam);
 }
 function syncStatusSuratMasuk(suratMasukId) {
   const surat = DB.findById("suratMasuk", suratMasukId);
   if (!surat) return;
-  const disposisi = DB.get("disposisiSurat").filter((item) => item.suratMasukId === suratMasukId);
+  const disposisi = recordsForViewedPeriod("disposisiSurat").filter((item) => item.suratMasukId === suratMasukId);
   const status = disposisi.some((item) => item.status === "Diproses") ? "Sudah Didisposisikan" : disposisi.some((item) => item.status === "Selesai") ? "Selesai" : "Baru";
   DB.update("suratMasuk", suratMasukId, { status });
 }
 function currentTendikId() { return session.role === "tendik" ? session.linkedId : ""; }
 
 function openDataForm({ title, fields, values = {}, submitLabel = "Simpan", onSave }) {
+  if (!requireActivePeriodForWrite()) return;
   const existing = document.getElementById("dataFormBackdrop");
   if (existing) existing.remove();
   const fieldHtml = fields.map((field) => {
@@ -1471,6 +1602,7 @@ function openDataForm({ title, fields, values = {}, submitLabel = "Simpan", onSa
   document.getElementById("dataFormCancel").addEventListener("click", close);
   document.getElementById("dataDynamicForm").addEventListener("submit", (event) => {
     event.preventDefault();
+    if (!requireActivePeriodForWrite()) return;
     const payload = {};
     fields.forEach((field) => {
       const value = document.getElementById(`dataField_${field.key}`).value;
@@ -1480,6 +1612,7 @@ function openDataForm({ title, fields, values = {}, submitLabel = "Simpan", onSa
   });
 }
 function deleteSupportRecord(collection, id, title, message, rerender) {
+  if (!requireActivePeriodForWrite()) return;
   confirmDialog({ title, message, confirmText: "Ya, Hapus", onConfirm: () => { DB.remove(collection, id); showToast("Data berhasil dihapus.", "success"); rerender(); } });
 }
 function pageEmpty(icon, message) { return `<div class="card"><div class="empty-state"><div class="ic">${icon}</div>${escapeHtml(message)}</div></div>`; }
@@ -1509,10 +1642,13 @@ function renderWaliRingkasan() {
   const content = document.getElementById("pageContent");
   const state = waliClassState("waliRingkasanState");
   if (!state.kelas) { content.innerHTML = pageEmpty("🏫", "Akun guru ini belum ditetapkan sebagai wali kelas."); return; }
-  const siswa = activeSiswa().filter((s) => s.kelas === state.kelas);
+  const currentSiswa = activeSiswa().filter((s) => s.kelas === state.kelas);
+  const periodClassRecords = recordsForViewedPeriod("absensi").filter((a) => a.kelas === state.kelas);
+  const historicalSiswaIds = [...new Set(periodClassRecords.map((a) => a.siswaId))];
+  const siswa = isViewingActivePeriod() ? currentSiswa : DB.get("siswa").filter((s) => historicalSiswaIds.includes(s.id));
   const kelas = DB.get("kelas").find((k) => k.nama === state.kelas) || {};
   const wali = DB.findById("guru", kelas.waliId) || {};
-  const todayAbsensi = DB.get("absensi").filter((a) => a.tanggal === todayISO() && siswa.some((s) => s.id === a.siswaId));
+  const todayAbsensi = periodClassRecords.filter((a) => a.tanggal === todayISO());
   const count = (status) => todayAbsensi.filter((a) => a.status === status).length;
   content.innerHTML = `${waliClassToolbar(state, "wr")}
     <div class="card" style="margin-bottom:16px;"><div class="flex gap-12" style="align-items:center;"><div class="stat-icon icon-blue">🏫</div><div><div class="text-muted" style="font-size:12px;">Wali Kelas</div><h3 style="margin:3px 0;">${escapeHtml(state.kelas)} — ${escapeHtml(wali.nama || "Belum ditentukan")}</h3><div class="text-muted" style="font-size:13px;">Ruang ${escapeHtml(kelas.ruang || "-")}</div></div></div></div>
@@ -1532,8 +1668,11 @@ function renderWaliAbsensi() {
   const content = document.getElementById("pageContent");
   const state = waliClassState("waliAbsensiState");
   if (!state.kelas) { content.innerHTML = pageEmpty("📅", "Akun guru ini belum ditetapkan sebagai wali kelas."); return; }
-  const siswa = activeSiswa().filter((s) => s.kelas === state.kelas);
-  const data = DB.get("absensi").filter((a) => a.tanggal === state.tanggal && siswa.some((s) => s.id === a.siswaId));
+  const currentSiswa = activeSiswa().filter((s) => s.kelas === state.kelas);
+  const periodClassRecords = recordsForViewedPeriod("absensi").filter((a) => a.kelas === state.kelas);
+  const historicalSiswaIds = [...new Set(periodClassRecords.map((a) => a.siswaId))];
+  const siswa = isViewingActivePeriod() ? currentSiswa : DB.get("siswa").filter((s) => historicalSiswaIds.includes(s.id));
+  const data = periodClassRecords.filter((a) => a.tanggal === state.tanggal);
   const count = (status) => data.filter((a) => a.status === status).length;
   const rows = siswa.map((s) => {
     const absen = data.find((a) => a.siswaId === s.id);
@@ -1544,10 +1683,11 @@ function renderWaliAbsensi() {
   bindWaliToolbar(state, "wa", renderWaliAbsensi, true);
 }
 window.setWaliAbsen = function(siswaId, status) {
+  if (!requireActivePeriodForWrite()) return;
   const state = waliClassState("waliAbsensiState");
   const siswa = DB.findById("siswa", siswaId);
   if (!siswa || siswa.kelas !== state.kelas) { showToast("Siswa tidak sesuai dengan kelas yang dipilih.", "error"); return; }
-  const data = DB.get("absensi");
+  const data = recordsForViewedPeriod("absensi");
   const existing = data.find((item) => item.siswaId === siswaId && item.tanggal === state.tanggal);
   if (existing) DB.update("absensi", existing.id, { status });
   else DB.insert("absensi", { siswaId, tanggal: state.tanggal, status });
@@ -1559,7 +1699,7 @@ function renderWaliCatatan() {
   const state = waliClassState("waliCatatanState");
   if (!state.kelas) { content.innerHTML = pageEmpty("📒", "Akun guru ini belum ditetapkan sebagai wali kelas."); return; }
   const siswa = activeSiswa().filter((s) => s.kelas === state.kelas);
-  let records = DB.get("waliCatatan").filter((r) => siswa.some((s) => s.id === r.siswaId));
+  let records = recordsForViewedPeriod("waliCatatan").filter((r) => r.kelas ? r.kelas === state.kelas : siswa.some((s) => s.id === r.siswaId));
   if (session.role === "guru") records = records.filter((r) => r.guruId === session.linkedId);
   records.sort((a, b) => b.tanggal.localeCompare(a.tanggal));
   const rows = records.map((r) => { const s = DB.findById("siswa", r.siswaId) || {}; const g = DB.findById("guru", r.guruId) || {}; return `<tr><td>${formatDate(r.tanggal)}</td><td><div class="tname">${escapeHtml(s.nama || "-")}</div><div class="tsub">${escapeHtml(s.kelas || "-")}</div></td><td>${supportBadge(r.kategori)}</td><td><div class="tname">${escapeHtml(r.isi)}</div><div class="tsub">${escapeHtml(r.tindakLanjut || "-")}</div></td><td>${escapeHtml(g.nama || "-")}</td><td><div class="row-actions"><button class="action-btn" onclick="editWaliCatatan('${r.id}')" title="Edit">✏️</button><button class="action-btn danger" onclick="deleteWaliCatatan('${r.id}')" title="Hapus">🗑️</button></div></td></tr>`; }).join("");
@@ -1599,7 +1739,7 @@ window.deleteBuku = (id) => deleteSupportRecord("buku", id, "Hapus Buku?", "Data
 
 function renderPerpusSirkulasi() {
   const content = document.getElementById("pageContent");
-  const records = [...DB.get("peminjamanBuku")].sort((a, b) => b.tanggalPinjam.localeCompare(a.tanggalPinjam));
+  const records = [...recordsForViewedPeriod("peminjamanBuku")].sort((a, b) => b.tanggalPinjam.localeCompare(a.tanggalPinjam));
   const rows = records.map((p) => { const buku = DB.findById("buku", p.bukuId) || {}; const terlambat = p.status === "Dipinjam" && p.jatuhTempo < todayISO(); return `<tr><td><div class="tname">${escapeHtml(buku.judul || "Buku dihapus")}</div><div class="tsub">${escapeHtml(buku.kode || "-")}</div></td><td>${escapeHtml(memberName(p.anggotaTipe, p.anggotaId))}</td><td>${formatDate(p.tanggalPinjam)}<div class="tsub">Jatuh tempo: ${formatDate(p.jatuhTempo)}</div></td><td>${p.tanggalKembali ? formatDate(p.tanggalKembali) : "-"}</td><td>${terlambat ? supportBadge("Terlambat") : supportBadge(p.status)}</td><td><div class="row-actions">${p.status === "Dipinjam" ? `<button class="action-btn" onclick="returnBuku('${p.id}')" title="Tandai dikembalikan">↩️</button>` : ""}<button class="action-btn" onclick="editPeminjamanBuku('${p.id}')" title="Edit">✏️</button><button class="action-btn danger" onclick="deletePeminjamanBuku('${p.id}')" title="Hapus">🗑️</button></div></td></tr>`; }).join("");
   content.innerHTML = `<div class="toolbar"><div></div><button class="btn btn-blue" id="btnAddPinjamBuku">➕ Catat Peminjaman</button></div>${records.length ? `<div class="table-wrap"><table><thead><tr><th>Buku</th><th>Peminjam</th><th>Tanggal Pinjam</th><th>Dikembalikan</th><th>Status</th><th>Aksi</th></tr></thead><tbody>${rows}</tbody></table></div>` : pageEmpty("🔄", "Belum ada transaksi peminjaman.")}`;
   document.getElementById("btnAddPinjamBuku").addEventListener("click", () => openPeminjamanBukuForm());
@@ -1624,18 +1764,18 @@ window.openPeminjamanBukuForm = function(record) {
   }});
 };
 window.editPeminjamanBuku = (id) => { const record = DB.findById("peminjamanBuku", id); if (record) openPeminjamanBukuForm(record); };
-window.returnBuku = (id) => { DB.update("peminjamanBuku", id, { status: "Dikembalikan", tanggalKembali: todayISO() }); showToast("Buku ditandai telah dikembalikan.", "success"); renderPerpusSirkulasi(); };
+window.returnBuku = (id) => { if (!requireActivePeriodForWrite()) return; DB.update("peminjamanBuku", id, { status: "Dikembalikan", tanggalKembali: todayISO() }); showToast("Buku ditandai telah dikembalikan.", "success"); renderPerpusSirkulasi(); };
 window.deletePeminjamanBuku = (id) => deleteSupportRecord("peminjamanBuku", id, "Hapus Transaksi?", "Transaksi peminjaman akan dihapus.", renderPerpusSirkulasi);
 
 function renderPerpusAnggota() {
   const content = document.getElementById("pageContent");
-  const siswa = activeSiswa(); const guru = DB.get("guru").filter((g) => g.status === "Aktif"); const loans = DB.get("peminjamanBuku").filter((p) => p.status === "Dipinjam");
+  const siswa = activeSiswa(); const guru = DB.get("guru").filter((g) => g.status === "Aktif"); const loans = recordsForViewedPeriod("peminjamanBuku").filter((p) => p.status === "Dipinjam");
   const rows = [...siswa.map((s) => ({ nama: s.nama, info: `Siswa ${s.kelas}`, tipe: "Siswa", id: s.id })), ...guru.map((g) => ({ nama: g.nama, info: g.mapel, tipe: "Guru", id: g.id }))].sort((a,b) => a.nama.localeCompare(b.nama)).map((m) => `<tr><td><div class="table-avatar"><div class="avatar">${initials(m.nama)}</div><div><div class="tname">${escapeHtml(m.nama)}</div><div class="tsub">${escapeHtml(m.info)}</div></div></div></td><td>${supportBadge(m.tipe)}</td><td>${loans.filter((p) => p.anggotaTipe.toLowerCase() === m.tipe.toLowerCase() && p.anggotaId === m.id).length}</td><td>${supportBadge("Aktif")}</td></tr>`).join("");
   content.innerHTML = `<div class="stat-grid" style="margin-bottom:16px;"><div class="stat-card"><div class="stat-info"><div class="label">Anggota Siswa</div><div class="value">${siswa.length}</div></div><div class="stat-icon icon-blue">🧑‍🎓</div></div><div class="stat-card"><div class="stat-info"><div class="label">Anggota Guru</div><div class="value">${guru.length}</div></div><div class="stat-icon icon-purple">🧑‍🏫</div></div><div class="stat-card"><div class="stat-info"><div class="label">Pinjaman Aktif</div><div class="value">${loans.length}</div></div><div class="stat-icon icon-orange">📚</div></div></div><div class="table-wrap"><table><thead><tr><th>Anggota</th><th>Jenis</th><th>Pinjaman Aktif</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table></div>`;
 }
 function renderPerpusLaporan() {
   const content = document.getElementById("pageContent");
-  const books = DB.get("buku"); const loans = DB.get("peminjamanBuku"); const active = loans.filter((p) => p.status === "Dipinjam"); const late = active.filter((p) => p.jatuhTempo < todayISO());
+  const books = DB.get("buku"); const loans = recordsForViewedPeriod("peminjamanBuku"); const active = loans.filter((p) => p.status === "Dipinjam"); const late = active.filter((p) => p.jatuhTempo < todayISO());
   const categoryRows = [...new Set(books.map((b) => b.kategori))].map((category) => { const list = books.filter((b) => b.kategori === category); return `<tr><td>${escapeHtml(category)}</td><td>${list.length}</td><td>${list.reduce((total, book) => total + Number(book.stok || 0), 0)}</td></tr>`; }).join("");
   content.innerHTML = `<div class="stat-grid" style="margin-bottom:16px;"><div class="stat-card"><div class="stat-info"><div class="label">Judul Koleksi</div><div class="value">${books.length}</div></div><div class="stat-icon icon-blue">📚</div></div><div class="stat-card"><div class="stat-info"><div class="label">Eksemplar</div><div class="value">${books.reduce((total, b) => total + Number(b.stok || 0), 0)}</div></div><div class="stat-icon icon-purple">📖</div></div><div class="stat-card"><div class="stat-info"><div class="label">Dipinjam</div><div class="value">${active.length}</div></div><div class="stat-icon icon-orange">🔄</div></div><div class="stat-card"><div class="stat-info"><div class="label">Terlambat</div><div class="value">${late.length}</div></div><div class="stat-icon icon-red">⚠️</div></div></div><div class="table-wrap"><table><thead><tr><th>Kategori</th><th>Judul</th><th>Total Stok</th></tr></thead><tbody>${categoryRows || `<tr><td colspan="3">Belum ada data koleksi.</td></tr>`}</tbody></table></div>`;
 }
@@ -1643,7 +1783,7 @@ function renderPerpusLaporan() {
 /* ---- TU & PERSURATAN DIGITAL (TENAGA PENDIDIK) ---- */
 function renderSuratMasuk() {
   const content = document.getElementById("pageContent");
-  const records = [...DB.get("suratMasuk")].sort((a, b) => b.tanggal.localeCompare(a.tanggal));
+  const records = [...recordsForViewedPeriod("suratMasuk")].sort((a, b) => b.tanggal.localeCompare(a.tanggal));
   const rows = records.map((s) => `<tr><td>${escapeHtml(s.nomorAgenda)}</td><td><div class="tname">${escapeHtml(s.perihal)}</div><div class="tsub">${escapeHtml(s.nomorSurat)}</div></td><td>${escapeHtml(s.pengirim)}</td><td>${formatDate(s.tanggal)}</td><td>${supportBadge(s.status)}</td><td><div class="row-actions"><button class="action-btn" onclick="editSuratMasuk('${s.id}')" title="Edit">✏️</button><button class="action-btn danger" onclick="deleteSuratMasuk('${s.id}')" title="Hapus">🗑️</button></div></td></tr>`).join("");
   content.innerHTML = `<div class="toolbar"><div></div><button class="btn btn-blue" id="btnAddSuratMasuk">➕ Registrasi Surat Masuk</button></div>${records.length ? `<div class="table-wrap"><table><thead><tr><th>No. Agenda</th><th>Perihal / No. Surat</th><th>Pengirim</th><th>Tanggal</th><th>Status</th><th>Aksi</th></tr></thead><tbody>${rows}</tbody></table></div>` : pageEmpty("📥", "Belum ada surat masuk.")}`;
   document.getElementById("btnAddSuratMasuk").addEventListener("click", () => openSuratMasukForm());
@@ -1657,7 +1797,7 @@ window.deleteSuratMasuk = (id) => deleteSupportRecord("suratMasuk", id, "Hapus S
 
 function renderSuratKeluar() {
   const content = document.getElementById("pageContent");
-  const records = [...DB.get("suratKeluar")].sort((a, b) => b.tanggal.localeCompare(a.tanggal));
+  const records = [...recordsForViewedPeriod("suratKeluar")].sort((a, b) => b.tanggal.localeCompare(a.tanggal));
   const rows = records.map((s) => `<tr><td>${escapeHtml(s.nomorSurat)}</td><td>${escapeHtml(s.tujuan)}</td><td>${escapeHtml(s.perihal)}</td><td>${formatDate(s.tanggal)}</td><td>${supportBadge(s.status)}</td><td><div class="row-actions"><button class="action-btn" onclick="editSuratKeluar('${s.id}')" title="Edit">✏️</button><button class="action-btn danger" onclick="deleteSuratKeluar('${s.id}')" title="Hapus">🗑️</button></div></td></tr>`).join("");
   content.innerHTML = `<div class="toolbar"><div></div><button class="btn btn-blue" id="btnAddSuratKeluar">➕ Buat Surat Keluar</button></div>${records.length ? `<div class="table-wrap"><table><thead><tr><th>Nomor Surat</th><th>Tujuan</th><th>Perihal</th><th>Tanggal</th><th>Status</th><th>Aksi</th></tr></thead><tbody>${rows}</tbody></table></div>` : pageEmpty("📤", "Belum ada surat keluar.")}`;
   document.getElementById("btnAddSuratKeluar").addEventListener("click", () => openSuratKeluarForm());
@@ -1671,13 +1811,13 @@ window.deleteSuratKeluar = (id) => deleteSupportRecord("suratKeluar", id, "Hapus
 
 function renderDisposisiSurat() {
   const content = document.getElementById("pageContent");
-  const records = [...DB.get("disposisiSurat")].sort((a, b) => b.batasWaktu.localeCompare(a.batasWaktu));
+  const records = [...recordsForViewedPeriod("disposisiSurat")].sort((a, b) => b.batasWaktu.localeCompare(a.batasWaktu));
   const rows = records.map((d) => { const surat = DB.findById("suratMasuk", d.suratMasukId) || {}; return `<tr><td><div class="tname">${escapeHtml(surat.perihal || "Surat dihapus")}</div><div class="tsub">${escapeHtml(surat.nomorAgenda || "-")}</div></td><td>${escapeHtml(d.kepada)}</td><td>${escapeHtml(d.instruksi)}</td><td>${formatDate(d.batasWaktu)}</td><td>${supportBadge(d.status)}</td><td><div class="row-actions"><button class="action-btn" onclick="editDisposisi('${d.id}')" title="Edit">✏️</button><button class="action-btn danger" onclick="deleteDisposisi('${d.id}')" title="Hapus">🗑️</button></div></td></tr>`; }).join("");
   content.innerHTML = `<div class="toolbar"><div></div><button class="btn btn-blue" id="btnAddDisposisi">➕ Buat Disposisi</button></div>${records.length ? `<div class="table-wrap"><table><thead><tr><th>Surat Masuk</th><th>Tujuan</th><th>Instruksi</th><th>Batas Waktu</th><th>Status</th><th>Aksi</th></tr></thead><tbody>${rows}</tbody></table></div>` : pageEmpty("🗂️", "Belum ada disposisi surat.")}`;
   document.getElementById("btnAddDisposisi").addEventListener("click", () => openDisposisiForm());
 }
 function disposisiFields() { return [
-  { key: "suratMasukId", label: "Surat Masuk", type: "select", options: DB.get("suratMasuk").map((s) => ({ value: s.id, label: `${s.nomorAgenda} — ${s.perihal}` })), required: true }, { key: "kepada", label: "Diteruskan Kepada", required: true }, { key: "instruksi", label: "Instruksi Disposisi", type: "textarea", full: true, required: true }, { key: "batasWaktu", label: "Batas Waktu", type: "date", required: true }, { key: "status", label: "Status", type: "select", options: ["Diproses","Selesai"].map((x) => ({ value: x, label: x })), required: true },
+  { key: "suratMasukId", label: "Surat Masuk", type: "select", options: recordsForViewedPeriod("suratMasuk").map((s) => ({ value: s.id, label: `${s.nomorAgenda} — ${s.perihal}` })), required: true }, { key: "kepada", label: "Diteruskan Kepada", required: true }, { key: "instruksi", label: "Instruksi Disposisi", type: "textarea", full: true, required: true }, { key: "batasWaktu", label: "Batas Waktu", type: "date", required: true }, { key: "status", label: "Status", type: "select", options: ["Diproses","Selesai"].map((x) => ({ value: x, label: x })), required: true },
 ]; }
 window.openDisposisiForm = function(record) {
   openDataForm({ title: record ? "Edit Disposisi" : "Buat Disposisi", fields: disposisiFields(), values: record || { batasWaktu: todayISO(), status: "Diproses" }, submitLabel: "Simpan Disposisi", onSave: (payload) => {
@@ -1691,6 +1831,7 @@ window.openDisposisiForm = function(record) {
 };
 window.editDisposisi = (id) => { const record = DB.findById("disposisiSurat", id); if (record) openDisposisiForm(record); };
 window.deleteDisposisi = (id) => {
+  if (!requireActivePeriodForWrite()) return;
   const record = DB.findById("disposisiSurat", id);
   if (!record) return;
   confirmDialog({ title: "Hapus Disposisi?", message: "Data disposisi akan dihapus permanen.", confirmText: "Ya, Hapus", onConfirm: () => {
@@ -1703,7 +1844,7 @@ window.deleteDisposisi = (id) => {
 
 function renderLaporanPersuratan() {
   const content = document.getElementById("pageContent");
-  const masuk = DB.get("suratMasuk"); const keluar = DB.get("suratKeluar"); const disposisi = DB.get("disposisiSurat");
+  const masuk = recordsForViewedPeriod("suratMasuk"); const keluar = recordsForViewedPeriod("suratKeluar"); const disposisi = recordsForViewedPeriod("disposisiSurat");
   const rows = masuk.map((s) => { const d = disposisi.filter((x) => x.suratMasukId === s.id); return `<tr><td>${escapeHtml(s.nomorAgenda)}</td><td>${escapeHtml(s.perihal)}</td><td>${supportBadge(s.status)}</td><td>${d.length}</td></tr>`; }).join("");
   content.innerHTML = `<div class="stat-grid" style="margin-bottom:16px;"><div class="stat-card"><div class="stat-info"><div class="label">Surat Masuk</div><div class="value">${masuk.length}</div></div><div class="stat-icon icon-blue">📥</div></div><div class="stat-card"><div class="stat-info"><div class="label">Surat Keluar</div><div class="value">${keluar.length}</div></div><div class="stat-icon icon-purple">📤</div></div><div class="stat-card"><div class="stat-info"><div class="label">Disposisi Diproses</div><div class="value">${disposisi.filter((d) => d.status === "Diproses").length}</div></div><div class="stat-icon icon-orange">🗂️</div></div><div class="stat-card"><div class="stat-info"><div class="label">Selesai</div><div class="value">${disposisi.filter((d) => d.status === "Selesai").length}</div></div><div class="stat-icon icon-green">✅</div></div></div><div class="table-wrap"><table><thead><tr><th>No. Agenda</th><th>Perihal</th><th>Status Surat</th><th>Jumlah Disposisi</th></tr></thead><tbody>${rows || `<tr><td colspan="4">Belum ada data persuratan.</td></tr>`}</tbody></table></div>`;
 }
@@ -1725,7 +1866,7 @@ window.deleteInventaris = (id) => deleteSupportRecord("inventaris", id, "Hapus I
 
 function renderPeminjamanAset() {
   const content = document.getElementById("pageContent");
-  const records = [...DB.get("peminjamanAset")].sort((a, b) => b.tanggalPinjam.localeCompare(a.tanggalPinjam));
+  const records = [...recordsForViewedPeriod("peminjamanAset")].sort((a, b) => b.tanggalPinjam.localeCompare(a.tanggalPinjam));
   const rows = records.map((p) => { const item = DB.findById("inventaris", p.inventarisId) || {}; return `<tr><td>${escapeHtml(item.nama || "Aset dihapus")}</td><td>${escapeHtml(p.peminjam)}</td><td>${formatDate(p.tanggalPinjam)}</td><td>${p.tanggalKembali ? formatDate(p.tanggalKembali) : "-"}</td><td>${escapeHtml(p.keperluan)}</td><td>${supportBadge(p.status)}</td><td><div class="row-actions">${p.status === "Dipinjam" ? `<button class="action-btn" onclick="returnAset('${p.id}')" title="Kembalikan">↩️</button>` : ""}<button class="action-btn" onclick="editPeminjamanAset('${p.id}')" title="Edit">✏️</button><button class="action-btn danger" onclick="deletePeminjamanAset('${p.id}')" title="Hapus">🗑️</button></div></td></tr>`; }).join("");
   content.innerHTML = `<div class="toolbar"><div></div><button class="btn btn-blue" id="btnAddPeminjamanAset">➕ Catat Peminjaman</button></div>${records.length ? `<div class="table-wrap"><table><thead><tr><th>Aset</th><th>Peminjam</th><th>Tgl Pinjam</th><th>Tgl Kembali</th><th>Keperluan</th><th>Status</th><th>Aksi</th></tr></thead><tbody>${rows}</tbody></table></div>` : pageEmpty("🔑", "Belum ada peminjaman aset.")}`;
   document.getElementById("btnAddPeminjamanAset").addEventListener("click", () => openPeminjamanAsetForm());
@@ -1745,12 +1886,12 @@ window.openPeminjamanAsetForm = function(record) {
   }});
 };
 window.editPeminjamanAset = (id) => { const record = DB.findById("peminjamanAset", id); if (record) openPeminjamanAsetForm(record); };
-window.returnAset = (id) => { DB.update("peminjamanAset", id, { status: "Dikembalikan", tanggalKembali: todayISO() }); showToast("Aset ditandai telah dikembalikan.", "success"); renderPeminjamanAset(); };
+window.returnAset = (id) => { if (!requireActivePeriodForWrite()) return; DB.update("peminjamanAset", id, { status: "Dikembalikan", tanggalKembali: todayISO() }); showToast("Aset ditandai telah dikembalikan.", "success"); renderPeminjamanAset(); };
 window.deletePeminjamanAset = (id) => deleteSupportRecord("peminjamanAset", id, "Hapus Peminjaman?", "Data peminjaman aset akan dihapus.", renderPeminjamanAset);
 
 function renderPemeliharaanAset() {
   const content = document.getElementById("pageContent");
-  const records = [...DB.get("pemeliharaanAset")].sort((a, b) => b.tanggal.localeCompare(a.tanggal));
+  const records = [...recordsForViewedPeriod("pemeliharaanAset")].sort((a, b) => b.tanggal.localeCompare(a.tanggal));
   const rows = records.map((m) => { const item = DB.findById("inventaris", m.inventarisId) || {}; return `<tr><td>${formatDate(m.tanggal)}</td><td>${escapeHtml(item.nama || "Aset dihapus")}</td><td>${escapeHtml(m.tindakan)}</td><td>Rp ${Number(m.biaya || 0).toLocaleString("id-ID")}</td><td>${supportBadge(m.status)}</td><td><div class="row-actions"><button class="action-btn" onclick="editPemeliharaan('${m.id}')" title="Edit">✏️</button><button class="action-btn danger" onclick="deletePemeliharaan('${m.id}')" title="Hapus">🗑️</button></div></td></tr>`; }).join("");
   content.innerHTML = `<div class="toolbar"><div></div><button class="btn btn-blue" id="btnAddPemeliharaan">➕ Catat Pemeliharaan</button></div>${records.length ? `<div class="table-wrap"><table><thead><tr><th>Tanggal</th><th>Aset</th><th>Tindakan</th><th>Biaya</th><th>Status</th><th>Aksi</th></tr></thead><tbody>${rows}</tbody></table></div>` : pageEmpty("🛠️", "Belum ada catatan pemeliharaan.")}`;
   document.getElementById("btnAddPemeliharaan").addEventListener("click", () => openPemeliharaanForm());
@@ -1764,7 +1905,7 @@ window.deletePemeliharaan = (id) => deleteSupportRecord("pemeliharaanAset", id, 
 
 function renderLaporanSarpras() {
   const content = document.getElementById("pageContent");
-  const inv = DB.get("inventaris"); const loans = DB.get("peminjamanAset"); const maintenance = DB.get("pemeliharaanAset");
+  const inv = DB.get("inventaris"); const loans = recordsForViewedPeriod("peminjamanAset"); const maintenance = recordsForViewedPeriod("pemeliharaanAset");
   const rows = inv.map((item) => `<tr><td>${escapeHtml(item.nama)}</td><td>${escapeHtml(item.lokasi)}</td><td>${item.jumlah}</td><td>${supportBadge(item.kondisi)}</td><td>${maintenance.filter((m) => m.inventarisId === item.id).length}</td></tr>`).join("");
   content.innerHTML = `<div class="stat-grid" style="margin-bottom:16px;"><div class="stat-card"><div class="stat-info"><div class="label">Jenis Inventaris</div><div class="value">${inv.length}</div></div><div class="stat-icon icon-blue">📦</div></div><div class="stat-card"><div class="stat-info"><div class="label">Aset Dipinjam</div><div class="value">${loans.filter((p) => p.status === "Dipinjam").length}</div></div><div class="stat-icon icon-purple">🔑</div></div><div class="stat-card"><div class="stat-info"><div class="label">Perlu Perawatan</div><div class="value">${inv.filter((i) => i.kondisi === "Perlu Perawatan" || i.kondisi === "Rusak").length}</div></div><div class="stat-icon icon-orange">🛠️</div></div><div class="stat-card"><div class="stat-info"><div class="label">Pemeliharaan Aktif</div><div class="value">${maintenance.filter((m) => m.status !== "Selesai").length}</div></div><div class="stat-icon icon-red">⚠️</div></div></div><div class="table-wrap"><table><thead><tr><th>Inventaris</th><th>Lokasi</th><th>Jumlah</th><th>Kondisi</th><th>Riwayat Perawatan</th></tr></thead><tbody>${rows || `<tr><td colspan="5">Belum ada data inventaris.</td></tr>`}</tbody></table></div>`;
 }
@@ -1772,43 +1913,43 @@ function renderLaporanSarpras() {
 /* ---- KEPALA SEKOLAH (MONITORING BACA SAJA) ---- */
 function renderKepsekDashboard() {
   const content = document.getElementById("pageContent");
-  const settings = DB.get("settings"); const siswa = activeSiswa(); const guru = DB.get("guru").filter((g) => g.status === "Aktif"); const todayAbs = DB.get("absensi").filter((a) => a.tanggal === todayISO()); const hadir = todayAbs.filter((a) => a.status === "Hadir").length; const presentRate = todayAbs.length ? Math.round((hadir / todayAbs.length) * 100) : 0; const nilai = DB.get("nilaiMapel"); const average = nilai.length ? Math.round(nilai.reduce((total, n) => total + Number(n.nilai), 0) / nilai.length) : 0;
+  const settings = DB.get("settings"); const siswa = activeSiswa(); const guru = DB.get("guru").filter((g) => g.status === "Aktif"); const todayAbs = recordsForViewedPeriod("absensi").filter((a) => a.tanggal === todayISO()); const hadir = todayAbs.filter((a) => a.status === "Hadir").length; const presentRate = todayAbs.length ? Math.round((hadir / todayAbs.length) * 100) : 0; const nilai = recordsForViewedPeriod("nilaiMapel"); const average = nilai.length ? Math.round(nilai.reduce((total, n) => total + Number(n.nilai), 0) / nilai.length) : 0;
   const kepsek = DB.findById("kepsek", session.role === "kepsek" ? session.linkedId : "ks1") || { nama: settings.kepsek };
-  content.innerHTML = `<div class="card" style="margin-bottom:16px;"><div class="flex gap-12" style="align-items:center;"><div class="stat-icon icon-blue">👔</div><div><div class="text-muted" style="font-size:12px;">Monitoring Kepala Sekolah</div><h3 style="margin:3px 0;">${escapeHtml(kepsek.nama || settings.kepsek)}</h3><div class="text-muted" style="font-size:13px;">Tahun Ajaran ${escapeHtml(settings.tahunAjaran)} • Semester ${escapeHtml(settings.semester)}</div></div></div></div><div class="stat-grid"><div class="stat-card"><div class="stat-info"><div class="label">Siswa Aktif</div><div class="value">${siswa.length}</div></div><div class="stat-icon icon-blue">🧑‍🎓</div></div><div class="stat-card"><div class="stat-info"><div class="label">Guru Aktif</div><div class="value">${guru.length}</div></div><div class="stat-icon icon-purple">🧑‍🏫</div></div><div class="stat-card"><div class="stat-info"><div class="label">Kehadiran Hari Ini</div><div class="value">${presentRate}%</div><div class="delta">${hadir} siswa hadir</div></div><div class="stat-icon icon-green">✅</div></div><div class="stat-card"><div class="stat-info"><div class="label">Rata-rata Nilai</div><div class="value">${average}</div></div><div class="stat-icon icon-orange">🎓</div></div></div><div class="grid-2"><div class="card"><div class="card-head"><div><h3>Status Operasional</h3><p>Ringkasan modul pendukung</p></div></div><div class="activity-item"><div class="activity-dot icon-blue">✉️</div><div><div class="activity-text"><b>${DB.get("suratMasuk").filter((s) => s.status !== "Selesai").length}</b> surat masuk perlu perhatian</div></div></div><div class="activity-item"><div class="activity-dot icon-orange">🛠️</div><div><div class="activity-text"><b>${DB.get("inventaris").filter((i) => i.kondisi !== "Baik").length}</b> aset perlu perawatan</div></div></div></div><div class="card"><div class="card-head"><div><h3>Akses Monitoring</h3><p>Gunakan submenu Kepala Sekolah untuk rincian</p></div></div><div class="flex gap-8" style="flex-wrap:wrap;"><a class="btn btn-outline btn-sm" href="#kepsek-akademik">Akademik →</a><a class="btn btn-outline btn-sm" href="#kepsek-kehadiran">Kehadiran →</a><a class="btn btn-outline btn-sm" href="#kepsek-sarpras">Sarpras →</a></div></div></div>`;
+  content.innerHTML = `<div class="card" style="margin-bottom:16px;"><div class="flex gap-12" style="align-items:center;"><div class="stat-icon icon-blue">👔</div><div><div class="text-muted" style="font-size:12px;">Monitoring Kepala Sekolah</div><h3 style="margin:3px 0;">${escapeHtml(kepsek.nama || settings.kepsek)}</h3><div class="text-muted" style="font-size:13px;">Periode tampilan: ${escapeHtml(currentPeriodLabel())}</div></div></div></div><div class="stat-grid"><div class="stat-card"><div class="stat-info"><div class="label">Siswa Aktif</div><div class="value">${siswa.length}</div></div><div class="stat-icon icon-blue">🧑‍🎓</div></div><div class="stat-card"><div class="stat-info"><div class="label">Guru Aktif</div><div class="value">${guru.length}</div></div><div class="stat-icon icon-purple">🧑‍🏫</div></div><div class="stat-card"><div class="stat-info"><div class="label">Kehadiran Hari Ini</div><div class="value">${presentRate}%</div><div class="delta">${hadir} siswa hadir</div></div><div class="stat-icon icon-green">✅</div></div><div class="stat-card"><div class="stat-info"><div class="label">Rata-rata Nilai</div><div class="value">${average}</div></div><div class="stat-icon icon-orange">🎓</div></div></div><div class="grid-2"><div class="card"><div class="card-head"><div><h3>Status Operasional</h3><p>Ringkasan modul pendukung</p></div></div><div class="activity-item"><div class="activity-dot icon-blue">✉️</div><div><div class="activity-text"><b>${recordsForViewedPeriod("suratMasuk").filter((s) => s.status !== "Selesai").length}</b> surat masuk perlu perhatian</div></div></div><div class="activity-item"><div class="activity-dot icon-orange">🛠️</div><div><div class="activity-text"><b>${DB.get("inventaris").filter((i) => i.kondisi !== "Baik").length}</b> aset perlu perawatan</div></div></div></div><div class="card"><div class="card-head"><div><h3>Akses Monitoring</h3><p>Gunakan submenu Kepala Sekolah untuk rincian</p></div></div><div class="flex gap-8" style="flex-wrap:wrap;"><a class="btn btn-outline btn-sm" href="#kepsek-akademik">Akademik →</a><a class="btn btn-outline btn-sm" href="#kepsek-kehadiran">Kehadiran →</a><a class="btn btn-outline btn-sm" href="#kepsek-sarpras">Sarpras →</a></div></div></div>`;
 }
 function renderKepsekAkademik() {
   const content = document.getElementById("pageContent");
-  const allNilai = DB.get("nilaiMapel"); const mapel = DB.get("mapel"); const journals = DB.get("jurnalMengajar"); const rows = mapel.map((m) => { const values = allNilai.filter((n) => n.mapelId === m.id); const avg = values.length ? Math.round(values.reduce((total, n) => total + Number(n.nilai), 0) / values.length) : 0; const below = values.filter((n) => Number(n.nilai) < m.kkm).length; return `<tr><td>${escapeHtml(m.nama)}</td><td>${m.kkm}</td><td>${values.length}</td><td>${avg || "-"}</td><td>${below ? supportBadge(`${below} di bawah KKM`) : supportBadge("Tuntas")}</td></tr>`; }).join("");
+  const allNilai = recordsForViewedPeriod("nilaiMapel"); const mapel = DB.get("mapel"); const journals = recordsForViewedPeriod("jurnalMengajar"); const rows = mapel.map((m) => { const values = allNilai.filter((n) => n.mapelId === m.id); const avg = values.length ? Math.round(values.reduce((total, n) => total + Number(n.nilai), 0) / values.length) : 0; const below = values.filter((n) => Number(n.nilai) < m.kkm).length; return `<tr><td>${escapeHtml(m.nama)}</td><td>${m.kkm}</td><td>${values.length}</td><td>${avg || "-"}</td><td>${below ? supportBadge(`${below} di bawah KKM`) : supportBadge("Tuntas")}</td></tr>`; }).join("");
   content.innerHTML = `<div class="stat-grid" style="margin-bottom:16px;"><div class="stat-card"><div class="stat-info"><div class="label">Nilai Tercatat</div><div class="value">${allNilai.length}</div></div><div class="stat-icon icon-blue">📝</div></div><div class="stat-card"><div class="stat-info"><div class="label">Jurnal Mengajar</div><div class="value">${journals.length}</div></div><div class="stat-icon icon-purple">📚</div></div><div class="stat-card"><div class="stat-info"><div class="label">Mapel Aktif</div><div class="value">${mapel.length}</div></div><div class="stat-icon icon-green">🎓</div></div></div><div class="table-wrap"><table><thead><tr><th>Mata Pelajaran</th><th>KKM</th><th>Nilai Tercatat</th><th>Rata-rata</th><th>Evaluasi</th></tr></thead><tbody>${rows}</tbody></table></div>`;
 }
 function renderKepsekKehadiran() {
   const content = document.getElementById("pageContent");
-  const date = todayISO(); const classes = DB.get("kelas"); const records = DB.get("absensi").filter((a) => a.tanggal === date);
-  const rows = classes.map((k) => { const studentIds = activeSiswa().filter((s) => s.kelas === k.nama).map((s) => s.id); const data = records.filter((a) => studentIds.includes(a.siswaId)); const hadir = data.filter((a) => a.status === "Hadir").length; const rate = data.length ? Math.round((hadir / data.length) * 100) : 0; return `<tr><td>${escapeHtml(k.nama)}</td><td>${studentIds.length}</td><td>${hadir}</td><td>${data.filter((a) => a.status === "Sakit").length + data.filter((a) => a.status === "Izin").length}</td><td>${data.filter((a) => a.status === "Alpa").length}</td><td>${supportBadge(`${rate}%`)}</td></tr>`; }).join("");
-  content.innerHTML = `<div class="card" style="margin-bottom:16px;"><span class="text-muted" style="font-size:13px;">Rekap kehadiran siswa pada ${formatDate(date)}. Gunakan menu Absensi untuk data rinci.</span></div><div class="table-wrap"><table><thead><tr><th>Kelas</th><th>Siswa Aktif</th><th>Hadir</th><th>Sakit/Izin</th><th>Alpa</th><th>Persentase Hadir</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+  const date = todayISO(); const classes = DB.get("kelas"); const records = recordsForViewedPeriod("absensi").filter((a) => a.tanggal === date);
+  const rows = classes.map((k) => { const data = isViewingActivePeriod() ? records.filter((a) => activeSiswa().some((s) => s.id === a.siswaId && s.kelas === k.nama)) : records.filter((a) => a.kelas === k.nama); const studentCount = isViewingActivePeriod() ? activeSiswa().filter((s) => s.kelas === k.nama).length : new Set(data.map((a) => a.siswaId)).size; const hadir = data.filter((a) => a.status === "Hadir").length; const rate = data.length ? Math.round((hadir / data.length) * 100) : 0; return `<tr><td>${escapeHtml(k.nama)}</td><td>${studentCount}</td><td>${hadir}</td><td>${data.filter((a) => a.status === "Sakit").length + data.filter((a) => a.status === "Izin").length}</td><td>${data.filter((a) => a.status === "Alpa").length}</td><td>${supportBadge(`${rate}%`)}</td></tr>`; }).join("");
+  content.innerHTML = `<div class="card" style="margin-bottom:16px;"><span class="text-muted" style="font-size:13px;">Rekap kehadiran siswa pada ${formatDate(date)}. Gunakan menu Wali Kelas atau Guru Mata Pelajaran untuk data rinci.</span></div><div class="table-wrap"><table><thead><tr><th>Kelas</th><th>Siswa Aktif</th><th>Hadir</th><th>Sakit/Izin</th><th>Alpa</th><th>Persentase Hadir</th></tr></thead><tbody>${rows}</tbody></table></div>`;
 }
 function renderKepsekSarpras() {
   const content = document.getElementById("pageContent");
-  const inv = DB.get("inventaris"); const maintenance = DB.get("pemeliharaanAset"); const loans = DB.get("peminjamanAset"); const rows = inv.map((i) => `<tr><td>${escapeHtml(i.kode)}</td><td>${escapeHtml(i.nama)}</td><td>${escapeHtml(i.lokasi)}</td><td>${i.jumlah}</td><td>${supportBadge(i.kondisi)}</td><td>${maintenance.filter((m) => m.inventarisId === i.id && m.status !== "Selesai").length}</td></tr>`).join("");
+  const inv = DB.get("inventaris"); const maintenance = recordsForViewedPeriod("pemeliharaanAset"); const loans = recordsForViewedPeriod("peminjamanAset"); const rows = inv.map((i) => `<tr><td>${escapeHtml(i.kode)}</td><td>${escapeHtml(i.nama)}</td><td>${escapeHtml(i.lokasi)}</td><td>${i.jumlah}</td><td>${supportBadge(i.kondisi)}</td><td>${maintenance.filter((m) => m.inventarisId === i.id && m.status !== "Selesai").length}</td></tr>`).join("");
   content.innerHTML = `<div class="stat-grid" style="margin-bottom:16px;"><div class="stat-card"><div class="stat-info"><div class="label">Inventaris</div><div class="value">${inv.length}</div></div><div class="stat-icon icon-blue">📦</div></div><div class="stat-card"><div class="stat-info"><div class="label">Aset Dipinjam</div><div class="value">${loans.filter((l) => l.status === "Dipinjam").length}</div></div><div class="stat-icon icon-purple">🔑</div></div><div class="stat-card"><div class="stat-info"><div class="label">Perlu Perawatan</div><div class="value">${inv.filter((i) => i.kondisi !== "Baik").length}</div></div><div class="stat-icon icon-orange">🛠️</div></div></div><div class="table-wrap"><table><thead><tr><th>Kode</th><th>Inventaris</th><th>Lokasi</th><th>Jumlah</th><th>Kondisi</th><th>Perawatan Aktif</th></tr></thead><tbody>${rows}</tbody></table></div>`;
 }
 function renderKepsekLaporan() {
   const content = document.getElementById("pageContent");
   const settings = DB.get("settings");
   const summaries = [
-    ["Akademik", "🎓", `${DB.get("nilaiMapel").length} nilai tercatat dan ${DB.get("jurnalMengajar").length} jurnal mengajar`],
-    ["Kehadiran", "✅", `${DB.get("absensi").length} absensi harian dan ${DB.get("absensiMapel").length} absensi mapel`],
-    ["Perpustakaan", "📚", `${DB.get("buku").length} judul buku dengan ${DB.get("peminjamanBuku").filter((p) => p.status === "Dipinjam").length} pinjaman aktif`],
-    ["Persuratan", "✉️", `${DB.get("suratMasuk").length} surat masuk dan ${DB.get("suratKeluar").length} surat keluar`],
-    ["Sarpras", "🏗️", `${DB.get("inventaris").length} jenis inventaris dan ${DB.get("pemeliharaanAset").filter((m) => m.status !== "Selesai").length} pemeliharaan aktif`],
+    ["Akademik", "🎓", `${recordsForViewedPeriod("nilaiMapel").length} nilai tercatat dan ${recordsForViewedPeriod("jurnalMengajar").length} jurnal mengajar`],
+    ["Kehadiran", "✅", `${recordsForViewedPeriod("absensi").length} absensi harian dan ${recordsForViewedPeriod("absensiMapel").length} absensi mapel`],
+    ["Perpustakaan", "📚", `${DB.get("buku").length} judul buku dengan ${recordsForViewedPeriod("peminjamanBuku").filter((p) => p.status === "Dipinjam").length} pinjaman aktif`],
+    ["Persuratan", "✉️", `${recordsForViewedPeriod("suratMasuk").length} surat masuk dan ${recordsForViewedPeriod("suratKeluar").length} surat keluar`],
+    ["Sarpras", "🏗️", `${DB.get("inventaris").length} jenis inventaris dan ${recordsForViewedPeriod("pemeliharaanAset").filter((m) => m.status !== "Selesai").length} pemeliharaan aktif`],
   ].map(([name, icon, desc]) => `<div class="activity-item"><div class="activity-dot icon-blue">${icon}</div><div><div class="activity-text"><b>${name}</b></div><div class="activity-time">${desc}</div></div></div>`).join("");
-  content.innerHTML = `<div class="card"><div class="card-head"><div><h3>Ringkasan Laporan Sekolah</h3><p>Tahun Ajaran ${escapeHtml(settings.tahunAjaran)} • Semester ${escapeHtml(settings.semester)}</p></div></div>${summaries}<div class="text-muted" style="font-size:12.5px; margin-top:16px;">Data monitoring bersifat baca saja untuk akun Kepala Sekolah dan diperbarui mengikuti transaksi dari setiap modul.</div></div>`;
+  content.innerHTML = `<div class="card"><div class="card-head"><div><h3>Ringkasan Laporan Sekolah</h3><p>Periode tampilan: ${escapeHtml(currentPeriodLabel())}</p></div></div>${summaries}<div class="text-muted" style="font-size:12.5px; margin-top:16px;">Data monitoring bersifat baca saja untuk akun Kepala Sekolah dan diperbarui mengikuti transaksi dari setiap modul.</div></div>`;
 }
 
 /* ---- INFORMASI MANDIRI SISWA ---- */
 function renderNilaiSaya() {
   const content = document.getElementById("pageContent");
-  const nilai = DB.get("nilaiMapel").filter((item) => item.siswaId === session.linkedId).sort((a, b) => a.mapelId.localeCompare(b.mapelId));
+  const nilai = recordsForViewedPeriod("nilaiMapel").filter((item) => item.siswaId === session.linkedId).sort((a, b) => a.mapelId.localeCompare(b.mapelId));
   const mapel = DB.get("mapel");
   const average = nilai.length ? Math.round(nilai.reduce((total, item) => total + Number(item.nilai), 0) / nilai.length) : 0;
   const belowKkm = nilai.filter((item) => { const m = mapel.find((itemMapel) => itemMapel.id === item.mapelId); return m && Number(item.nilai) < Number(m.kkm); }).length;
@@ -1821,7 +1962,7 @@ function renderNilaiSaya() {
 }
 function renderKehadiranSaya() {
   const content = document.getElementById("pageContent");
-  const data = [...DB.get("absensi")].filter((item) => item.siswaId === session.linkedId).sort((a, b) => b.tanggal.localeCompare(a.tanggal));
+  const data = [...recordsForViewedPeriod("absensi")].filter((item) => item.siswaId === session.linkedId).sort((a, b) => b.tanggal.localeCompare(a.tanggal));
   const total = data.length;
   const count = (status) => data.filter((item) => item.status === status).length;
   const rows = data.map((item) => `<tr><td>${formatDate(item.tanggal)}</td><td>${supportBadge(item.status)}</td></tr>`).join("");
@@ -2303,7 +2444,7 @@ function renderJurnalMengajar() {
   if (!window.jurnalMengajarState) window.jurnalMengajarState = { searchTerm: "", kelas: "", mapelId: "", guruId: "" };
   const state = window.jurnalMengajarState;
   const isAdmin = session.role === "admin";
-  let data = DB.get("jurnalMengajar");
+  let data = recordsForViewedPeriod("jurnalMengajar");
   const guru = DB.get("guru");
   const mapel = DB.get("mapel");
 
@@ -2320,6 +2461,7 @@ function renderJurnalMengajar() {
   const toolbar = `
     <div class="toolbar">
       <div class="toolbar-left">
+        ${periodContextBadge()}
         <div class="search-box"><span class="ic">🔍</span><input type="text" id="jurnalSearch" placeholder="Cari materi atau catatan..." value="${escapeHtml(state.searchTerm)}" /></div>
         <select class="select-filter" id="jurnalKelas"><option value="">Semua Kelas</option>${kelasOptions(state.kelas)}</select>
         <select class="select-filter" id="jurnalMapel"><option value="">Semua Mapel</option>${mapelOptions(state.mapelId, "", false)}</select>
@@ -2372,11 +2514,13 @@ function populateJurnalForm(record) {
   };
 }
 window.openJurnalForm = function(record) {
+  if (!requireActivePeriodForWrite()) return;
   document.getElementById("jurnalForm").reset();
   if (record && !canManageGuruMapelRecord(record)) { showToast("Anda tidak berhak mengubah jurnal ini.", "error"); return; }
   populateJurnalForm(record);
   document.getElementById("jurnalId").value = record ? record.id : "";
   document.getElementById("jurnalModalTitle").textContent = record ? "Edit Jurnal Mengajar" : "Tambah Jurnal Mengajar";
+  document.getElementById("jmPeriod").value = currentPeriodLabel();
   document.getElementById("jmTanggal").value = record ? record.tanggal : new Date().toISOString().slice(0, 10);
   document.getElementById("jmJamKe").value = record ? record.jamKe : "";
   document.getElementById("jmMateri").value = record ? record.materi : "";
@@ -2385,6 +2529,7 @@ window.openJurnalForm = function(record) {
 };
 window.editJurnal = function(id) { const record = DB.findById("jurnalMengajar", id); if (record) openJurnalForm(record); };
 window.deleteJurnal = function(id) {
+  if (!requireActivePeriodForWrite()) return;
   const record = DB.findById("jurnalMengajar", id);
   if (!canManageGuruMapelRecord(record)) { showToast("Anda tidak berhak menghapus jurnal ini.", "error"); return; }
   confirmDialog({ title: "Hapus Jurnal Mengajar?", message: "Jurnal ini akan dihapus permanen.", confirmText: "Ya, Hapus", onConfirm: () => {
@@ -2405,8 +2550,11 @@ function renderAbsensiSiswaMapel() {
   const content = document.getElementById("pageContent");
   const state = getAbsensiMapelState();
   const isAdmin = session.role === "admin";
-  const siswaKelas = DB.get("siswa").filter((s) => s.kelas === state.kelas && s.status === "Aktif");
-  const absensi = DB.get("absensiMapel");
+  const absensi = recordsForViewedPeriod("absensiMapel");
+  const currentSiswaKelas = DB.get("siswa").filter((s) => s.kelas === state.kelas && s.status === "Aktif");
+  const periodClassRecords = absensi.filter((a) => a.kelas === state.kelas);
+  const historicalSiswaIds = [...new Set(periodClassRecords.map((a) => a.siswaId))];
+  const siswaKelas = isViewingActivePeriod() ? currentSiswaKelas : DB.get("siswa").filter((s) => historicalSiswaIds.includes(s.id));
   const currentGuru = DB.findById("guru", state.guruId) || {};
   const currentMapel = DB.findById("mapel", state.mapelId) || {};
   const summary = MAPEL_ABSEN_STATUS_OPTIONS.map((status) => ({ status, count: siswaKelas.filter((s) => {
@@ -2420,6 +2568,7 @@ function renderAbsensiSiswaMapel() {
   }).join("");
   content.innerHTML = `
     <div class="toolbar"><div class="toolbar-left">
+      ${periodContextBadge()}
       ${isAdmin ? `<select class="select-filter" id="amGuru">${guruOptions(state.guruId)}</select>` : `<span class="badge badge-blue">${escapeHtml(currentGuru.nama || "Guru Mata Pelajaran")}</span>`}
       <select class="select-filter" id="amKelas">${kelasOptions(state.kelas)}</select>
       <select class="select-filter" id="amMapel">${mapelOptions(state.mapelId, state.guruId, !isAdmin)}</select>
@@ -2435,9 +2584,10 @@ function renderAbsensiSiswaMapel() {
   document.getElementById("amTanggal").addEventListener("change", (event) => { state.tanggal = event.target.value; renderAbsensiSiswaMapel(); });
 }
 window.setAbsenMapel = function(siswaId, status) {
+  if (!requireActivePeriodForWrite()) return;
   const state = getAbsensiMapelState();
   if (!state.guruId || !state.mapelId) { showToast("Pilih guru dan mata pelajaran terlebih dahulu.", "error"); return; }
-  const records = DB.get("absensiMapel");
+  const records = recordsForViewedPeriod("absensiMapel");
   const existing = records.find((a) => a.guruId === state.guruId && a.siswaId === siswaId && a.mapelId === state.mapelId && a.tanggal === state.tanggal);
   if (existing) DB.update("absensiMapel", existing.id, { status });
   else DB.insert("absensiMapel", { guruId: state.guruId, siswaId, mapelId: state.mapelId, tanggal: state.tanggal, status });
@@ -2464,10 +2614,10 @@ function renderInputNilaiMapel() {
   const siswa = DB.get("siswa");
   const guru = DB.get("guru");
   const mapel = DB.get("mapel");
-  let data = DB.get("nilaiMapel");
+  let data = recordsForViewedPeriod("nilaiMapel");
   if (!isAdmin) data = data.filter((n) => n.guruId === session.linkedId);
   else if (state.guruId) data = data.filter((n) => n.guruId === state.guruId);
-  if (state.kelas) data = data.filter((n) => (siswa.find((s) => s.id === n.siswaId) || {}).kelas === state.kelas);
+  if (state.kelas) data = data.filter((n) => (n.kelas || (siswa.find((s) => s.id === n.siswaId) || {}).kelas) === state.kelas);
   if (state.mapelId) data = data.filter((n) => n.mapelId === state.mapelId);
   if (state.searchTerm) {
     const query = state.searchTerm.toLowerCase();
@@ -2479,10 +2629,11 @@ function renderInputNilaiMapel() {
     const pengajar = guru.find((g) => g.id === n.guruId) || {};
     const pelajaran = mapel.find((m) => m.id === n.mapelId) || { kkm: 75 };
     const canManage = canManageGuruMapelRecord(n);
-    return `<tr><td><div class="table-avatar"><div class="avatar">${initials(murid.nama)}</div><div><div class="tname">${escapeHtml(murid.nama || "-")}</div><div class="tsub">${escapeHtml(murid.kelas || "-")}</div></div></div></td><td>${escapeHtml(pengajar.nama || "-")}</td><td>${escapeHtml(pelajaran.nama || "-")}</td><td><span class="badge badge-gray">${escapeHtml(n.jenis)}</span></td><td>${n.nilai >= pelajaran.kkm ? `<span class="badge badge-green">${n.nilai}</span>` : `<span class="badge badge-red">${n.nilai}</span>`}</td><td>${escapeHtml(n.semester)} ${escapeHtml(n.tahunAjaran)}</td><td>${canManage ? `<div class="row-actions"><button class="action-btn" title="Edit" onclick="editInputNilai('${n.id}')">✏️</button><button class="action-btn danger" title="Hapus" onclick="deleteInputNilai('${n.id}')">🗑️</button></div>` : "-"}</td></tr>`;
+    return `<tr><td><div class="table-avatar"><div class="avatar">${initials(murid.nama)}</div><div><div class="tname">${escapeHtml(murid.nama || "-")}</div><div class="tsub">${escapeHtml(n.kelas || murid.kelas || "-")}</div></div></div></td><td>${escapeHtml(pengajar.nama || "-")}</td><td>${escapeHtml(pelajaran.nama || "-")}</td><td><span class="badge badge-gray">${escapeHtml(n.jenis)}</span></td><td>${n.nilai >= pelajaran.kkm ? `<span class="badge badge-green">${n.nilai}</span>` : `<span class="badge badge-red">${n.nilai}</span>`}</td><td>${escapeHtml(n.semester)} ${escapeHtml(n.tahunAjaran)}</td><td>${canManage ? `<div class="row-actions"><button class="action-btn" title="Edit" onclick="editInputNilai('${n.id}')">✏️</button><button class="action-btn danger" title="Hapus" onclick="deleteInputNilai('${n.id}')">🗑️</button></div>` : "-"}</td></tr>`;
   }).join("");
   content.innerHTML = `
     <div class="toolbar"><div class="toolbar-left">
+      ${periodContextBadge()}
       <div class="search-box"><span class="ic">🔍</span><input type="text" id="inSearch" placeholder="Cari nama siswa..." value="${escapeHtml(state.searchTerm)}" /></div>
       ${isAdmin ? `<select class="select-filter" id="inFilterGuru"><option value="">Semua Guru</option>${guruOptions(state.guruId)}</select>` : ""}
       <select class="select-filter" id="inFilterKelas"><option value="">Semua Kelas</option>${kelasOptions(state.kelas)}</select>
@@ -2517,17 +2668,20 @@ function populateInputNilaiForm(record) {
   document.getElementById("inKelas").onchange = () => populateInputNilaiSiswa(document.getElementById("inKelas").value, "");
 }
 window.openInputNilaiForm = function(record) {
+  if (!requireActivePeriodForWrite()) return;
   document.getElementById("inputNilaiForm").reset();
   if (record && !canManageGuruMapelRecord(record)) { showToast("Anda tidak berhak mengubah nilai ini.", "error"); return; }
   populateInputNilaiForm(record);
   document.getElementById("inNilaiId").value = record ? record.id : "";
   document.getElementById("inputNilaiModalTitle").textContent = record ? "Edit Nilai" : "Input Nilai";
+  document.getElementById("inPeriod").value = currentPeriodLabel();
   document.getElementById("inJenis").value = record ? record.jenis : "Tugas";
   document.getElementById("inNilai").value = record ? record.nilai : "";
   openModal("inputNilaiModal");
 };
 window.editInputNilai = function(id) { const record = DB.findById("nilaiMapel", id); if (record) openInputNilaiForm(record); };
 window.deleteInputNilai = function(id) {
+  if (!requireActivePeriodForWrite()) return;
   const record = DB.findById("nilaiMapel", id);
   if (!canManageGuruMapelRecord(record)) { showToast("Anda tidak berhak menghapus nilai ini.", "error"); return; }
   confirmDialog({ title: "Hapus Nilai?", message: "Data nilai ini akan dihapus permanen.", confirmText: "Ya, Hapus", onConfirm: () => {
@@ -2543,7 +2697,7 @@ function renderPengumuman() {
   const canEdit = session.role === "admin" || session.role === "guru";
 
   function renderList() {
-    const data = [...DB.get("pengumuman")].sort((a,b) => b.tanggal.localeCompare(a.tanggal));
+    const data = [...recordsForViewedPeriod("pengumuman")].sort((a,b) => b.tanggal.localeCompare(a.tanggal));
     if (data.length === 0) return `<div class="table-wrap"><div class="empty-state"><div class="ic">📣</div>Belum ada pengumuman.</div></div>`;
     return data.map(p => `
       <div class="card" style="margin-bottom:14px;">
@@ -2569,6 +2723,7 @@ function renderPengumuman() {
 }
 
 window.openPengumumanForm = function(item) {
+  if (!requireActivePeriodForWrite()) return;
   document.getElementById("pengumumanForm").reset();
   if (item) {
     document.getElementById("pengumumanModalTitle").textContent = "Edit Pengumuman";
@@ -2584,6 +2739,7 @@ window.openPengumumanForm = function(item) {
 };
 window.editPengumuman = function(id) { const p = DB.findById("pengumuman", id); if (p) openPengumumanForm(p); };
 window.deletePengumuman = function(id) {
+  if (!requireActivePeriodForWrite()) return;
   confirmDialog({
     title: "Hapus Pengumuman?", message: "Pengumuman ini akan dihapus permanen.", confirmText: "Ya, Hapus",
     onConfirm: () => { DB.remove("pengumuman", id); showToast("Pengumuman berhasil dihapus.", "success"); renderPengumuman(); },
@@ -2696,6 +2852,9 @@ function renderPengaturan() {
   const content = document.getElementById("pageContent");
   const s = DB.get("settings");
   const users = DB.get("users");
+  const years = [...DB.get("tahunAjaranList")].sort((a, b) => b.tahunAjaran.localeCompare(a.tahunAjaran));
+  const yearOptions = years.map((year) => `<option value="${escapeHtml(year.tahunAjaran)}" ${year.tahunAjaran === s.tahunAjaran ? "selected" : ""}>${escapeHtml(year.tahunAjaran)}${year.aktif ? " (Aktif)" : ""}</option>`).join("");
+  const yearRows = years.map((year) => `<tr><td class="tname">${escapeHtml(year.tahunAjaran)}</td><td>${year.aktif ? supportBadge("Aktif") : supportBadge("Arsip")}</td><td>${formatDate(year.dibuatPada)}</td><td>${year.aktif ? "-" : `<button class="btn btn-outline btn-sm" onclick="activateAcademicYear('${year.id}')">Jadikan Aktif</button>`}</td></tr>`).join("");
 
   content.innerHTML = `
     <div class="grid-2">
@@ -2709,7 +2868,7 @@ function renderPengaturan() {
             <div class="field full"><label>Alamat</label><input type="text" id="fAlamat" value="${escapeHtml(s.alamat)}" /></div>
             <div class="field"><label>Email</label><input type="email" id="fEmail" value="${escapeHtml(s.email)}" /></div>
             <div class="field"><label>Kepala Sekolah</label><input type="text" id="fKepsek" value="${escapeHtml(s.kepsek)}" /></div>
-            <div class="field"><label>Tahun Ajaran</label><input type="text" id="fTahunAjaran" value="${escapeHtml(s.tahunAjaran)}" /></div>
+            <div class="field"><label>Tahun Ajaran Aktif</label><select id="fTahunAjaran">${yearOptions}</select></div>
             <div class="field"><label>Semester</label><select id="fSemester"><option value="Ganjil" ${s.semester==='Ganjil'?'selected':''}>Ganjil</option><option value="Genap" ${s.semester==='Genap'?'selected':''}>Genap</option></select></div>
           </div>
           <button type="submit" class="btn btn-blue" style="margin-top:6px;">💾 Simpan Perubahan</button>
@@ -2729,6 +2888,17 @@ function renderPengaturan() {
       </div>
     </div>
     <div class="card" style="margin-top:18px;">
+      <div class="card-head"><div><h3>Tahun Ajaran & Arsip Semester</h3><p>Tambah periode baru dan aktifkan periode operasional sekolah</p></div></div>
+      <div class="grid-2" style="align-items:start;">
+        <form id="academicYearForm" class="card" style="box-shadow:none; border:1px solid var(--border); padding:16px;">
+          <div class="field"><label>Tahun Ajaran Baru</label><input type="text" id="newAcademicYear" placeholder="Contoh: 2027/2028" pattern="[0-9]{4}/[0-9]{4}" required /></div>
+          <p class="text-muted" style="font-size:12.5px; margin:0 0 14px; line-height:1.5;">Tahun ajaran baru dibuat sebagai arsip. Setelah diaktifkan, transaksi baru otomatis tersimpan pada tahun tersebut.</p>
+          <button type="submit" class="btn btn-blue">➕ Tambah Tahun Ajaran</button>
+        </form>
+        <div class="table-wrap" style="box-shadow:none;"><table><thead><tr><th>Tahun Ajaran</th><th>Status</th><th>Dibuat</th><th>Aksi</th></tr></thead><tbody>${yearRows}</tbody></table></div>
+      </div>
+    </div>
+    <div class="card" style="margin-top:18px;">
       <div class="card-head"><div><h3>Akun Pengguna</h3><p>Daftar akun login pada sistem</p></div></div>
       <div class="table-wrap" style="box-shadow:none; border:none;">
         <table><thead><tr><th>Nama</th><th>Username</th><th>Peran</th></tr></thead>
@@ -2739,6 +2909,8 @@ function renderPengaturan() {
   document.getElementById("settingsForm").addEventListener("submit", (e) => {
     e.preventDefault();
     const namaKepsek = document.getElementById("fKepsek").value.trim();
+    const tahunAjaranAktif = document.getElementById("fTahunAjaran").value;
+    const semesterAktif = document.getElementById("fSemester").value;
     DB.updateSettings({
       namaSekolah: document.getElementById("fNamaSekolah").value.trim(),
       npsn: document.getElementById("fNpsn").value.trim(),
@@ -2746,15 +2918,30 @@ function renderPengaturan() {
       alamat: document.getElementById("fAlamat").value.trim(),
       email: document.getElementById("fEmail").value.trim(),
       kepsek: namaKepsek,
-      tahunAjaran: document.getElementById("fTahunAjaran").value.trim(),
-      semester: document.getElementById("fSemester").value,
+      tahunAjaran: tahunAjaranAktif,
+      semester: semesterAktif,
     });
+    DB.setCollection("tahunAjaranList", DB.get("tahunAjaranList").map((year) => ({ ...year, aktif: year.tahunAjaran === tahunAjaranAktif })));
+    sessionStorage.setItem(VIEW_PERIOD_KEY, JSON.stringify({ tahunAjaran: tahunAjaranAktif, semester: semesterAktif }));
     const dataKepsek = DB.findById("kepsek", "ks1");
     if (dataKepsek) DB.update("kepsek", "ks1", { nama: namaKepsek });
     const akunKepsek = DB.get("users").find((user) => user.role === "kepsek");
     if (akunKepsek) DB.update("users", akunKepsek.id, { name: namaKepsek });
     showToast("Profil sekolah berhasil diperbarui.", "success");
     document.getElementById("sbSchoolName").textContent = DB.get("settings").namaSekolah;
+    renderPengaturan();
+  });
+
+  document.getElementById("academicYearForm").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const tahunAjaran = document.getElementById("newAcademicYear").value.trim();
+    if (!/^\d{4}\/\d{4}$/.test(tahunAjaran)) { showToast("Gunakan format tahun ajaran seperti 2027/2028.", "error"); return; }
+    const [mulai, selesai] = tahunAjaran.split("/").map(Number);
+    if (selesai !== mulai + 1) { showToast("Tahun akhir harus satu tahun setelah tahun awal.", "error"); return; }
+    if (DB.get("tahunAjaranList").some((year) => year.tahunAjaran === tahunAjaran)) { showToast("Tahun ajaran tersebut sudah tersedia.", "error"); return; }
+    DB.insert("tahunAjaranList", { tahunAjaran, aktif: false, dibuatPada: todayISO() });
+    refreshPeriodSelector();
+    showToast(`Tahun ajaran ${tahunAjaran} berhasil ditambahkan. Aktifkan saat akan digunakan.`, "success");
     renderPengaturan();
   });
 
@@ -2796,6 +2983,25 @@ function renderPengaturan() {
     });
   });
 }
+
+window.activateAcademicYear = function(id) {
+  const year = DB.findById("tahunAjaranList", id);
+  if (!year) { showToast("Tahun ajaran tidak ditemukan.", "error"); return; }
+  const settings = DB.get("settings");
+  confirmDialog({
+    title: `Aktifkan Tahun Ajaran ${year.tahunAjaran}?`,
+    message: `Transaksi baru akan dicatat pada ${year.tahunAjaran}, semester ${settings.semester}. Data tahun sebelumnya tetap tersimpan sebagai arsip.`,
+    confirmText: "Ya, Aktifkan",
+    onConfirm: () => {
+      DB.setCollection("tahunAjaranList", DB.get("tahunAjaranList").map((item) => ({ ...item, aktif: item.id === id })));
+      DB.updateSettings({ tahunAjaran: year.tahunAjaran });
+      sessionStorage.setItem(VIEW_PERIOD_KEY, JSON.stringify({ tahunAjaran: year.tahunAjaran, semester: settings.semester }));
+      refreshPeriodSelector();
+      showToast(`Tahun ajaran ${year.tahunAjaran} telah diaktifkan.`, "success");
+      renderPengaturan();
+    },
+  });
+};
 
 /* ---------------------------------------------------------
    7) GLOBAL FORM BINDINGS (modal forms — bound once)
@@ -2885,6 +3091,7 @@ document.getElementById("kelasForm").addEventListener("submit", (e) => {
 
 document.getElementById("jurnalForm").addEventListener("submit", (e) => {
   e.preventDefault();
+  if (!requireActivePeriodForWrite()) return;
   const id = document.getElementById("jurnalId").value;
   const existing = id ? DB.findById("jurnalMengajar", id) : null;
   if (existing && !canManageGuruMapelRecord(existing)) { showToast("Anda tidak berhak mengubah jurnal ini.", "error"); return; }
@@ -2908,6 +3115,7 @@ document.getElementById("jurnalForm").addEventListener("submit", (e) => {
 
 document.getElementById("inputNilaiForm").addEventListener("submit", (e) => {
   e.preventDefault();
+  if (!requireActivePeriodForWrite()) return;
   const id = document.getElementById("inNilaiId").value;
   const existing = id ? DB.findById("nilaiMapel", id) : null;
   if (existing && !canManageGuruMapelRecord(existing)) { showToast("Anda tidak berhak mengubah nilai ini.", "error"); return; }
@@ -2932,6 +3140,7 @@ document.getElementById("inputNilaiForm").addEventListener("submit", (e) => {
 
 document.getElementById("pengumumanForm").addEventListener("submit", (e) => {
   e.preventDefault();
+  if (!requireActivePeriodForWrite()) return;
   const id = document.getElementById("pengumumanId").value;
   const payload = {
     judul: document.getElementById("pJudul").value.trim(),
