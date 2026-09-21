@@ -34,7 +34,7 @@ Cukup buka file `sistem-digital-smp-hulnani.html` langsung dengan browser (doubl
   - **Input Nilai** — input nilai per siswa, lengkap dengan jenis penilaian dan indikator KKM.
   - Admin menetapkan **Kelas yang Diampu** pada data Guru. Guru hanya dapat melihat dan mengolah siswa, jurnal, absensi, serta nilai pada kelas yang ditetapkan dan mata pelajaran yang tercantum pada profilnya; pilihan mata pelajaran otomatis terkunci.
 - **Data Akademik Siswa** — nilai dan kehadiran siswa dikelola oleh Guru melalui modul Guru Mata Pelajaran serta Wali Kelas. Riwayat nilai lama dimigrasikan otomatis ke Input Nilai Mata Pelajaran.
-- **Wali Kelas** (Admin/Guru) — Ringkasan Kelas, **Monitoring Mapel**, Siswa Binaan, Absensi & Rekap, serta Catatan Wali Kelas. Monitoring Mapel otomatis menampilkan nilai, kehadiran per mata pelajaran, dan jurnal mengajar yang diinput Guru Mata Pelajaran untuk kelas binaan. Guru hanya melihat kelas yang diwalikan; Admin dapat memantau seluruh kelas.
+- **Wali Kelas** (Admin/Guru) — Ringkasan Kelas, **Monitoring Mapel**, Siswa Binaan, serta Catatan Wali Kelas. Monitoring Mapel otomatis menampilkan nilai, kehadiran per mata pelajaran, dan jurnal mengajar yang diinput Guru Mata Pelajaran untuk kelas binaan. Guru hanya melihat kelas yang diwalikan; Admin dapat memantau seluruh kelas.
 - **Perpustakaan** (Admin/Guru) — Koleksi Buku (CRUD), Peminjaman & Pengembalian, Anggota dari data Siswa/Guru, serta laporan sirkulasi. Guru bertugas sebagai petugas perpustakaan.
 - **TU & Persuratan Digital** (Admin/Tenaga Pendidik) — Surat Masuk, Surat Keluar, Disposisi & Arsip Digital, serta laporan persuratan. Tenaga Pendidik bertugas mengelola operasional persuratan.
 - **Sarana & Prasarana** (Admin/Tenaga Pendidik) — Inventaris Barang, Peminjaman Aset, Kondisi & Pemeliharaan, serta laporan Sarpras. Tenaga Pendidik bertugas mengelola operasional Sarpras.
@@ -43,7 +43,7 @@ Cukup buka file `sistem-digital-smp-hulnani.html` langsung dengan browser (doubl
 - **Otomasi operasional** — stok buku dan unit aset tersedia dihitung otomatis berdasarkan pinjaman aktif; pengembalian langsung memperbarui ketersediaan; status surat masuk disinkronkan otomatis dengan disposisi; rekap dashboard dan monitoring mengambil data transaksi terbaru.
 - **Profil Saya** — Guru, Tenaga Pendidik, dan Kepala Sekolah dapat melihat data pribadi & mengganti kata sandi.
 
-> Catatan: menu lama **Nilai Akademik** dan **Absensi** telah dihapus dari navigasi. Nilai dikelola dari **Guru Mata Pelajaran → Input Nilai**, sedangkan absensi harian dikelola dari **Wali Kelas → Absensi & Rekap**. Guru yang belum ditetapkan sebagai wali kelas tidak melihat grup Wali Kelas.
+> Catatan: menu lama **Nilai Akademik** dan **Absensi** telah dihapus dari navigasi. Nilai dikelola dari **Guru Mata Pelajaran → Input Nilai** dan kehadiran dicatat dari **Guru Mata Pelajaran → Absensi Siswa**. Wali Kelas membaca rekapnya melalui **Wali Kelas → Monitoring Mapel**. Guru yang belum ditetapkan sebagai wali kelas tidak melihat grup Wali Kelas.
 
 ## Mengelola Tahun Ajaran dan Arsip
 

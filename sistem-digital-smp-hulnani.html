@@ -1197,7 +1197,6 @@ const NAV_ITEMS = [
   { key: "wali-ringkasan", icon: "🏫", label: "Ringkasan Kelas", roles: ["admin", "guru"], waliKelasGroup: true },
   { key: "wali-monitoring-mapel", icon: "📚", label: "Monitoring Mapel", roles: ["admin", "guru"], waliKelasGroup: true },
   { key: "wali-siswa", icon: "🧑‍🎓", label: "Siswa Binaan", roles: ["admin", "guru"], waliKelasGroup: true },
-  { key: "wali-absensi", icon: "📅", label: "Absensi & Rekap", roles: ["admin", "guru"], waliKelasGroup: true },
   { key: "wali-catatan", icon: "📒", label: "Catatan Wali Kelas", roles: ["admin", "guru"], waliKelasGroup: true },
 
   { key: "perpus-koleksi", icon: "📚", label: "Koleksi Buku", roles: ["admin", "guru"], perpustakaanGroup: true },
@@ -1250,7 +1249,6 @@ const PAGE_META = {
   "wali-ringkasan": { title: "Ringkasan Kelas", sub: "Pantau kondisi dan kehadiran kelas binaan" },
   "wali-monitoring-mapel": { title: "Monitoring Mapel", sub: "Nilai, kehadiran mapel, dan jurnal mengajar kelas binaan" },
   "wali-siswa": { title: "Siswa Binaan", sub: "Data siswa yang berada di bawah pembinaan wali kelas" },
-  "wali-absensi": { title: "Absensi & Rekap", sub: "Rekap kehadiran dan tindak lanjut siswa per kelas" },
   "wali-catatan": { title: "Catatan Wali Kelas", sub: "Catatan perkembangan dan komunikasi wali kelas" },
 
   "perpus-koleksi": { title: "Koleksi Buku", sub: "Kelola katalog dan inventaris koleksi perpustakaan" },
@@ -1382,7 +1380,6 @@ const ROUTES = {
   "wali-ringkasan": renderWaliRingkasan,
   "wali-monitoring-mapel": renderWaliMonitoringMapel,
   "wali-siswa": renderWaliSiswa,
-  "wali-absensi": renderWaliAbsensi,
   "wali-catatan": renderWaliCatatan,
   "perpus-koleksi": renderPerpusKoleksi,
   "perpus-sirkulasi": renderPerpusSirkulasi,
@@ -1455,12 +1452,12 @@ function renderDashboard() {
   const siswa = DB.get("siswa");
   const guru = DB.get("guru");
   const kelas = DB.get("kelas");
-  const absensi = recordsForViewedPeriod("absensi");
+  const absensi = recordsForViewedPeriod("absensiMapel");
   const nilai = recordsForViewedPeriod("nilaiMapel");
   const pengumuman = recordsForViewedPeriod("pengumuman");
   const settings = DB.get("settings");
   const guruKelasAmpu = session.role === "guru" ? getGuruTaughtClasses(session.linkedId) : [];
-  const absensiTampil = session.role === "guru" ? absensi.filter((item) => guruKelasAmpu.includes(item.kelas || ((siswa.find((row) => row.id === item.siswaId) || {}).kelas))) : absensi;
+  const absensiTampil = session.role === "guru" ? absensi.filter((item) => item.guruId === session.linkedId && guruKelasAmpu.includes(item.kelas || ((siswa.find((row) => row.id === item.siswaId) || {}).kelas))) : absensi;
   const nilaiTampil = session.role === "guru" ? nilai.filter((item) => item.guruId === session.linkedId && item.mapelId === getGuruMapelId(session.linkedId) && guruKelasAmpu.includes(item.kelas || ((siswa.find((row) => row.id === item.siswaId) || {}).kelas))) : nilai;
 
   const today = new Date().toISOString().slice(0, 10);
@@ -1529,14 +1526,15 @@ function renderDashboard() {
   const recentAbsen = [...absensiTampil].sort((a,b) => b.tanggal.localeCompare(a.tanggal)).slice(0, 6);
   const activityHtml = recentAbsen.map(a => {
     const s = DB.findById("siswa", a.siswaId);
+    const pelajaran = DB.findById("mapel", a.mapelId) || {};
     const iconMap = { Hadir: ["✅","icon-green"], Sakit: ["🤒","icon-orange"], Izin: ["✉️","icon-blue"], Alpa: ["❌","icon-red"] };
     const [ic, cls] = iconMap[a.status] || ["ℹ️","icon-blue"];
-    return `<div class="activity-item"><div class="activity-dot ${cls}">${ic}</div><div><div class="activity-text"><b>${escapeHtml(s ? s.nama : "Siswa")}</b> tercatat <b>${a.status}</b> di kelas ${escapeHtml(s ? s.kelas : "-")}</div><div class="activity-time">${formatDateTimeRelative(a.tanggal)}</div></div></div>`;
+    return `<div class="activity-item"><div class="activity-dot ${cls}">${ic}</div><div><div class="activity-text"><b>${escapeHtml(s ? s.nama : "Siswa")}</b> tercatat <b>${a.status}</b> pada ${escapeHtml(pelajaran.nama || "mata pelajaran")} • ${escapeHtml(a.kelas || (s ? s.kelas : "-"))}</div><div class="activity-time">${formatDateTimeRelative(a.tanggal)}</div></div></div>`;
   }).join("") || `<div class="empty-state"><div class="ic">🗒️</div>Belum ada data aktivitas.</div>`;
 
   const annHtml = [...pengumuman].sort((a,b)=>b.tanggal.localeCompare(a.tanggal)).slice(0,3).map(p => `
     <div class="mini-announce"><h4>${escapeHtml(p.judul)}</h4><p>${formatDate(p.tanggal)} • ${escapeHtml(p.kategori)}</p></div>`).join("") || `<div class="empty-state"><div class="ic">📣</div>Belum ada pengumuman.</div>`;
-  const activityRoute = session.role === "guru" ? "absensi-siswa" : session.role === "admin" ? "wali-absensi" : session.role === "tendik" ? "tu-surat-masuk" : "kepsek-kehadiran";
+  const activityRoute = ["admin", "guru"].includes(session.role) ? "absensi-siswa" : session.role === "tendik" ? "tu-surat-masuk" : "kepsek-kehadiran";
   const infoRoute = ["admin", "guru"].includes(session.role) ? "pengumuman" : session.role === "tendik" ? "tu-surat-masuk" : "kepsek-dashboard";
 
   content.innerHTML = `
@@ -1667,7 +1665,7 @@ function renderWaliRingkasan() {
   const state = waliClassState("waliRingkasanState");
   if (!state.kelas) { content.innerHTML = pageEmpty("🏫", "Akun guru ini belum ditetapkan sebagai wali kelas."); return; }
   const currentSiswa = activeSiswa().filter((s) => s.kelas === state.kelas);
-  const periodClassRecords = recordsForViewedPeriod("absensi").filter((a) => a.kelas === state.kelas);
+  const periodClassRecords = recordsForViewedPeriod("absensiMapel").filter((a) => a.kelas === state.kelas);
   const historicalSiswaIds = [...new Set(periodClassRecords.map((a) => a.siswaId))];
   const siswa = isViewingActivePeriod() ? currentSiswa : DB.get("siswa").filter((s) => historicalSiswaIds.includes(s.id));
   const kelas = DB.get("kelas").find((k) => k.nama === state.kelas) || {};
@@ -1676,7 +1674,7 @@ function renderWaliRingkasan() {
   const count = (status) => todayAbsensi.filter((a) => a.status === status).length;
   content.innerHTML = `${waliClassToolbar(state, "wr")}
     <div class="card" style="margin-bottom:16px;"><div class="flex gap-12" style="align-items:center;"><div class="stat-icon icon-blue">🏫</div><div><div class="text-muted" style="font-size:12px;">Wali Kelas</div><h3 style="margin:3px 0;">${escapeHtml(state.kelas)} — ${escapeHtml(wali.nama || "Belum ditentukan")}</h3><div class="text-muted" style="font-size:13px;">Ruang ${escapeHtml(kelas.ruang || "-")}</div></div></div></div>
-    <div class="stat-grid"><div class="stat-card"><div class="stat-info"><div class="label">Siswa Aktif</div><div class="value">${siswa.length}</div></div><div class="stat-icon icon-blue">🧑‍🎓</div></div><div class="stat-card"><div class="stat-info"><div class="label">Hadir Hari Ini</div><div class="value">${count("Hadir")}</div></div><div class="stat-icon icon-green">✅</div></div><div class="stat-card"><div class="stat-info"><div class="label">Sakit / Izin</div><div class="value">${count("Sakit") + count("Izin")}</div></div><div class="stat-icon icon-orange">📅</div></div><div class="stat-card"><div class="stat-info"><div class="label">Alpa</div><div class="value">${count("Alpa")}</div></div><div class="stat-icon icon-red">❌</div></div></div>`;
+    <div class="stat-grid"><div class="stat-card"><div class="stat-info"><div class="label">Siswa Aktif</div><div class="value">${siswa.length}</div></div><div class="stat-icon icon-blue">🧑‍🎓</div></div><div class="stat-card"><div class="stat-info"><div class="label">Hadir Mapel Hari Ini</div><div class="value">${count("Hadir")}</div></div><div class="stat-icon icon-green">✅</div></div><div class="stat-card"><div class="stat-info"><div class="label">Sakit / Izin Mapel</div><div class="value">${count("Sakit") + count("Izin")}</div></div><div class="stat-icon icon-orange">📅</div></div><div class="stat-card"><div class="stat-info"><div class="label">Alpa</div><div class="value">${count("Alpa")}</div></div><div class="stat-icon icon-red">❌</div></div></div>`;
   bindWaliToolbar(state, "wr", renderWaliRingkasan);
 }
 function renderWaliMonitoringMapel() {
@@ -1758,36 +1756,6 @@ function renderWaliSiswa() {
   content.innerHTML = `${waliClassToolbar(state, "ws")}<div class="table-wrap">${siswa.length ? `<table><thead><tr><th>Siswa</th><th>JK</th><th>Orang Tua/Wali</th><th>Telepon</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table>` : `<div class="empty-state"><div class="ic">🧑‍🎓</div>Belum ada siswa aktif di kelas ini.</div>`}</div>`;
   bindWaliToolbar(state, "ws", renderWaliSiswa);
 }
-function renderWaliAbsensi() {
-  const content = document.getElementById("pageContent");
-  const state = waliClassState("waliAbsensiState");
-  if (!state.kelas) { content.innerHTML = pageEmpty("📅", "Akun guru ini belum ditetapkan sebagai wali kelas."); return; }
-  const currentSiswa = activeSiswa().filter((s) => s.kelas === state.kelas);
-  const periodClassRecords = recordsForViewedPeriod("absensi").filter((a) => a.kelas === state.kelas);
-  const historicalSiswaIds = [...new Set(periodClassRecords.map((a) => a.siswaId))];
-  const siswa = isViewingActivePeriod() ? currentSiswa : DB.get("siswa").filter((s) => historicalSiswaIds.includes(s.id));
-  const data = periodClassRecords.filter((a) => a.tanggal === state.tanggal);
-  const count = (status) => data.filter((a) => a.status === status).length;
-  const rows = siswa.map((s) => {
-    const absen = data.find((a) => a.siswaId === s.id);
-    const statusAktif = absen ? absen.status : "Hadir";
-    return `<tr><td><div class="tname">${escapeHtml(s.nama)}</div></td><td>${escapeHtml(s.nis)}</td><td><div class="row-actions">${["Hadir", "Sakit", "Izin", "Alpa"].map((status) => `<button class="btn btn-sm ${status === statusAktif ? "btn-blue" : "btn-outline"}" type="button" onclick="setWaliAbsen('${s.id}', '${status}')">${status}</button>`).join("")}</div></td></tr>`;
-  }).join("");
-  content.innerHTML = `${waliClassToolbar(state, "wa", true)}<div class="card" style="margin-bottom:16px; padding:14px 18px;"><span class="text-muted" style="font-size:13px;">Klik status kehadiran untuk menyimpan absensi ${escapeHtml(state.kelas)} secara otomatis pada ${formatDate(state.tanggal)}.</span></div><div class="stat-grid" style="margin-bottom:16px;">${["Hadir","Sakit","Izin","Alpa"].map((status) => `<div class="stat-card"><div class="stat-info"><div class="label">${status}</div><div class="value">${count(status)}</div></div><div class="stat-icon ${status === "Hadir" ? "icon-green" : status === "Alpa" ? "icon-red" : "icon-orange"}">${status === "Hadir" ? "✅" : status === "Alpa" ? "❌" : "📅"}</div></div>`).join("")}</div><div class="table-wrap"><table><thead><tr><th>Nama Siswa</th><th>NIS</th><th>Status Kehadiran</th></tr></thead><tbody>${rows}</tbody></table></div>`;
-  bindWaliToolbar(state, "wa", renderWaliAbsensi, true);
-}
-window.setWaliAbsen = function(siswaId, status) {
-  if (!requireActivePeriodForWrite()) return;
-  const state = waliClassState("waliAbsensiState");
-  const siswa = DB.findById("siswa", siswaId);
-  if (!siswa || siswa.kelas !== state.kelas) { showToast("Siswa tidak sesuai dengan kelas yang dipilih.", "error"); return; }
-  const data = recordsForViewedPeriod("absensi");
-  const existing = data.find((item) => item.siswaId === siswaId && item.tanggal === state.tanggal);
-  if (existing) DB.update("absensi", existing.id, { status });
-  else DB.insert("absensi", { siswaId, tanggal: state.tanggal, status });
-  showToast(`Kehadiran ${siswa.nama} diperbarui: ${status}`, "success");
-  renderWaliAbsensi();
-};
 function renderWaliCatatan() {
   const content = document.getElementById("pageContent");
   const state = waliClassState("waliCatatanState");
@@ -2007,9 +1975,9 @@ function renderLaporanSarpras() {
 /* ---- KEPALA SEKOLAH (MONITORING BACA SAJA) ---- */
 function renderKepsekDashboard() {
   const content = document.getElementById("pageContent");
-  const settings = DB.get("settings"); const siswa = activeSiswa(); const guru = DB.get("guru").filter((g) => g.status === "Aktif"); const todayAbs = recordsForViewedPeriod("absensi").filter((a) => a.tanggal === todayISO()); const hadir = todayAbs.filter((a) => a.status === "Hadir").length; const presentRate = todayAbs.length ? Math.round((hadir / todayAbs.length) * 100) : 0; const nilai = recordsForViewedPeriod("nilaiMapel"); const average = nilai.length ? Math.round(nilai.reduce((total, n) => total + Number(n.nilai), 0) / nilai.length) : 0;
+  const settings = DB.get("settings"); const siswa = activeSiswa(); const guru = DB.get("guru").filter((g) => g.status === "Aktif"); const todayAbs = recordsForViewedPeriod("absensiMapel").filter((a) => a.tanggal === todayISO()); const hadir = todayAbs.filter((a) => a.status === "Hadir").length; const presentRate = todayAbs.length ? Math.round((hadir / todayAbs.length) * 100) : 0; const nilai = recordsForViewedPeriod("nilaiMapel"); const average = nilai.length ? Math.round(nilai.reduce((total, n) => total + Number(n.nilai), 0) / nilai.length) : 0;
   const kepsek = DB.findById("kepsek", session.role === "kepsek" ? session.linkedId : "ks1") || { nama: settings.kepsek };
-  content.innerHTML = `<div class="card" style="margin-bottom:16px;"><div class="flex gap-12" style="align-items:center;"><div class="stat-icon icon-blue">👔</div><div><div class="text-muted" style="font-size:12px;">Monitoring Kepala Sekolah</div><h3 style="margin:3px 0;">${escapeHtml(kepsek.nama || settings.kepsek)}</h3><div class="text-muted" style="font-size:13px;">Periode tampilan: ${escapeHtml(currentPeriodLabel())}</div></div></div></div><div class="stat-grid"><div class="stat-card"><div class="stat-info"><div class="label">Siswa Aktif</div><div class="value">${siswa.length}</div></div><div class="stat-icon icon-blue">🧑‍🎓</div></div><div class="stat-card"><div class="stat-info"><div class="label">Guru Aktif</div><div class="value">${guru.length}</div></div><div class="stat-icon icon-purple">🧑‍🏫</div></div><div class="stat-card"><div class="stat-info"><div class="label">Kehadiran Hari Ini</div><div class="value">${presentRate}%</div><div class="delta">${hadir} siswa hadir</div></div><div class="stat-icon icon-green">✅</div></div><div class="stat-card"><div class="stat-info"><div class="label">Rata-rata Nilai</div><div class="value">${average}</div></div><div class="stat-icon icon-orange">🎓</div></div></div><div class="grid-2"><div class="card"><div class="card-head"><div><h3>Status Operasional</h3><p>Ringkasan modul pendukung</p></div></div><div class="activity-item"><div class="activity-dot icon-blue">✉️</div><div><div class="activity-text"><b>${recordsForViewedPeriod("suratMasuk").filter((s) => s.status !== "Selesai").length}</b> surat masuk perlu perhatian</div></div></div><div class="activity-item"><div class="activity-dot icon-orange">🛠️</div><div><div class="activity-text"><b>${DB.get("inventaris").filter((i) => i.kondisi !== "Baik").length}</b> aset perlu perawatan</div></div></div></div><div class="card"><div class="card-head"><div><h3>Akses Monitoring</h3><p>Gunakan submenu Kepala Sekolah untuk rincian</p></div></div><div class="flex gap-8" style="flex-wrap:wrap;"><a class="btn btn-outline btn-sm" href="#kepsek-akademik">Akademik →</a><a class="btn btn-outline btn-sm" href="#kepsek-kehadiran">Kehadiran →</a><a class="btn btn-outline btn-sm" href="#kepsek-sarpras">Sarpras →</a></div></div></div>`;
+  content.innerHTML = `<div class="card" style="margin-bottom:16px;"><div class="flex gap-12" style="align-items:center;"><div class="stat-icon icon-blue">👔</div><div><div class="text-muted" style="font-size:12px;">Monitoring Kepala Sekolah</div><h3 style="margin:3px 0;">${escapeHtml(kepsek.nama || settings.kepsek)}</h3><div class="text-muted" style="font-size:13px;">Periode tampilan: ${escapeHtml(currentPeriodLabel())}</div></div></div></div><div class="stat-grid"><div class="stat-card"><div class="stat-info"><div class="label">Siswa Aktif</div><div class="value">${siswa.length}</div></div><div class="stat-icon icon-blue">🧑‍🎓</div></div><div class="stat-card"><div class="stat-info"><div class="label">Guru Aktif</div><div class="value">${guru.length}</div></div><div class="stat-icon icon-purple">🧑‍🏫</div></div><div class="stat-card"><div class="stat-info"><div class="label">Kehadiran Mapel Hari Ini</div><div class="value">${presentRate}%</div><div class="delta">${hadir} catatan hadir</div></div><div class="stat-icon icon-green">✅</div></div><div class="stat-card"><div class="stat-info"><div class="label">Rata-rata Nilai</div><div class="value">${average}</div></div><div class="stat-icon icon-orange">🎓</div></div></div><div class="grid-2"><div class="card"><div class="card-head"><div><h3>Status Operasional</h3><p>Ringkasan modul pendukung</p></div></div><div class="activity-item"><div class="activity-dot icon-blue">✉️</div><div><div class="activity-text"><b>${recordsForViewedPeriod("suratMasuk").filter((s) => s.status !== "Selesai").length}</b> surat masuk perlu perhatian</div></div></div><div class="activity-item"><div class="activity-dot icon-orange">🛠️</div><div><div class="activity-text"><b>${DB.get("inventaris").filter((i) => i.kondisi !== "Baik").length}</b> aset perlu perawatan</div></div></div></div><div class="card"><div class="card-head"><div><h3>Akses Monitoring</h3><p>Gunakan submenu Kepala Sekolah untuk rincian</p></div></div><div class="flex gap-8" style="flex-wrap:wrap;"><a class="btn btn-outline btn-sm" href="#kepsek-akademik">Akademik →</a><a class="btn btn-outline btn-sm" href="#kepsek-kehadiran">Kehadiran →</a><a class="btn btn-outline btn-sm" href="#kepsek-sarpras">Sarpras →</a></div></div></div>`;
 }
 function renderKepsekAkademik() {
   const content = document.getElementById("pageContent");
@@ -2018,9 +1986,9 @@ function renderKepsekAkademik() {
 }
 function renderKepsekKehadiran() {
   const content = document.getElementById("pageContent");
-  const date = todayISO(); const classes = DB.get("kelas"); const records = recordsForViewedPeriod("absensi").filter((a) => a.tanggal === date);
+  const date = todayISO(); const classes = DB.get("kelas"); const records = recordsForViewedPeriod("absensiMapel").filter((a) => a.tanggal === date);
   const rows = classes.map((k) => { const data = isViewingActivePeriod() ? records.filter((a) => activeSiswa().some((s) => s.id === a.siswaId && s.kelas === k.nama)) : records.filter((a) => a.kelas === k.nama); const studentCount = isViewingActivePeriod() ? activeSiswa().filter((s) => s.kelas === k.nama).length : new Set(data.map((a) => a.siswaId)).size; const hadir = data.filter((a) => a.status === "Hadir").length; const rate = data.length ? Math.round((hadir / data.length) * 100) : 0; return `<tr><td>${escapeHtml(k.nama)}</td><td>${studentCount}</td><td>${hadir}</td><td>${data.filter((a) => a.status === "Sakit").length + data.filter((a) => a.status === "Izin").length}</td><td>${data.filter((a) => a.status === "Alpa").length}</td><td>${supportBadge(`${rate}%`)}</td></tr>`; }).join("");
-  content.innerHTML = `<div class="card" style="margin-bottom:16px;"><span class="text-muted" style="font-size:13px;">Rekap kehadiran siswa pada ${formatDate(date)}. Gunakan menu Wali Kelas atau Guru Mata Pelajaran untuk data rinci.</span></div><div class="table-wrap"><table><thead><tr><th>Kelas</th><th>Siswa Aktif</th><th>Hadir</th><th>Sakit/Izin</th><th>Alpa</th><th>Persentase Hadir</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+  content.innerHTML = `<div class="card" style="margin-bottom:16px;"><span class="text-muted" style="font-size:13px;">Rekap kehadiran per mata pelajaran pada ${formatDate(date)} berdasarkan input Guru Mata Pelajaran.</span></div><div class="table-wrap"><table><thead><tr><th>Kelas</th><th>Siswa Aktif</th><th>Hadir Mapel</th><th>Sakit/Izin</th><th>Alpa</th><th>Persentase Hadir</th></tr></thead><tbody>${rows}</tbody></table></div>`;
 }
 function renderKepsekSarpras() {
   const content = document.getElementById("pageContent");
@@ -2032,7 +2000,7 @@ function renderKepsekLaporan() {
   const settings = DB.get("settings");
   const summaries = [
     ["Akademik", "🎓", `${recordsForViewedPeriod("nilaiMapel").length} nilai tercatat dan ${recordsForViewedPeriod("jurnalMengajar").length} jurnal mengajar`],
-    ["Kehadiran", "✅", `${recordsForViewedPeriod("absensi").length} absensi harian dan ${recordsForViewedPeriod("absensiMapel").length} absensi mapel`],
+    ["Kehadiran", "✅", `${recordsForViewedPeriod("absensiMapel").length} catatan kehadiran mata pelajaran`],
     ["Perpustakaan", "📚", `${DB.get("buku").length} judul buku dengan ${recordsForViewedPeriod("peminjamanBuku").filter((p) => p.status === "Dipinjam").length} pinjaman aktif`],
     ["Persuratan", "✉️", `${recordsForViewedPeriod("suratMasuk").length} surat masuk dan ${recordsForViewedPeriod("suratKeluar").length} surat keluar`],
     ["Sarpras", "🏗️", `${DB.get("inventaris").length} jenis inventaris dan ${recordsForViewedPeriod("pemeliharaanAset").filter((m) => m.status !== "Selesai").length} pemeliharaan aktif`],
@@ -2040,7 +2008,6 @@ function renderKepsekLaporan() {
   content.innerHTML = `<div class="card"><div class="card-head"><div><h3>Ringkasan Laporan Sekolah</h3><p>Periode tampilan: ${escapeHtml(currentPeriodLabel())}</p></div></div>${summaries}<div class="text-muted" style="font-size:12.5px; margin-top:16px;">Data monitoring bersifat baca saja untuk akun Kepala Sekolah dan diperbarui mengikuti transaksi dari setiap modul.</div></div>`;
 }
 
-/* ---- INFORMASI MANDIRI SISWA ---- */
 /* ---- DATA SISWA ---- */
 const siswaState = { searchTerm: "", filterKelas: "", currentPage: 1, pageSize: 8 };
 
